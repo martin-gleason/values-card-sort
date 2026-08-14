@@ -4,7 +4,17 @@ A free, open-source, native Apple app (iOS · iPadOS · macOS, one SwiftUI codeb
 
 Sort 83 value cards into five piles, keep your 5–10 most important, rank them, and export the result as markdown. Everything stays on your device: no accounts, no analytics, **no network connections at all**.
 
-**Status:** pre-build. The spec and harness are ratified artifacts; feature work proceeds gate by gate. See `docs/SPEC.md` (the contract), `docs/TESTING.md` (the harness), `docs/decisions.md` (the log), and `CLAUDE.md` (the standing rules).
+**Status:** F1 (foundation) built; F2 (sort phase) next. `docs/SPEC.md` is version 1.0-draft — the contract the build follows, with the open items in §11 tracked in `docs/plans/spec-deltas.md` until Marty ratifies them. Feature work proceeds gate by gate. See `docs/SPEC.md` (the contract), `docs/TESTING.md` (the test plan), `docs/plans/` (working docs), `docs/decisions.md` (the log), and `CLAUDE.md` (the standing rules).
+
+## Building
+
+```
+brew install xcodegen        # build-time only; nothing links into the app
+./scripts/bootstrap.sh       # generates ValuesCardSort.xcodeproj (gitignored)
+swift test                   # deck fidelity + phase-rule tests, no simulator needed
+```
+
+Requires Xcode 26 or later. Targets iOS/iPadOS 18+ and macOS 15+. See `CONTRIBUTING.md`.
 
 ## Provenance
 
