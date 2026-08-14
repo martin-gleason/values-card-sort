@@ -180,6 +180,24 @@ struct DeckUnavailableView: View {
     }
 }
 
+/// Shown when the local session store will not open.
+///
+/// The alternative was `fatalError`, i.e. crash-on-launch with no path out for
+/// someone whose store got corrupted. Flagged in adversarial review as
+/// inconsistent with the care taken over `DeckUnavailableView` a few lines away.
+struct StoreUnavailableView: View {
+    let error: any Error
+
+    var body: some View {
+        ContentUnavailableView {
+            Label("Your saved sorts could not be opened", systemImage: "externaldrive.badge.exclamationmark")
+        } description: {
+            Text("The app could not open its local storage, so it cannot show or save sorts right now. Nothing has been sent anywhere — this app makes no network connections.\n\n\(String(describing: error))")
+        }
+        .accessibilityIdentifier("store-unavailable")
+    }
+}
+
 #Preview("Deck loaded") {
     RootView(deckResult: Result { try DeckLoader.load() })
         .modelContainer(for: SessionRecord.self, inMemory: true)

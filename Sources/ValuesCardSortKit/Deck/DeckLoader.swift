@@ -87,6 +87,12 @@ public enum DeckLoader {
     public static func load(contentsOf url: URL) throws -> Deck {
         let data: Data
         do {
+            // The deck is a bundle resource resolved by `Bundle.module`. The
+            // guard makes that structural rather than assumed: `Data(contentsOf:)`
+            // performs a synchronous GET for an http(s) URL, so a caller passing
+            // a remote one would breach SPEC §7 through this line.
+            guard url.isFileURL else { throw DeckError.resourceMissing }
+            // privacy-ok(file-url): guarded above; cannot reach the network.
             data = try Data(contentsOf: url)
         } catch {
             throw DeckError.resourceMissing

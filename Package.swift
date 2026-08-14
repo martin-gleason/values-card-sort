@@ -23,10 +23,16 @@ let package = Package(
     targets: [
         .target(
             name: "ValuesCardSortKit",
-            // Resources/deck.v1.json is a symlink to ../../../data/deck.v1.json.
-            // One true copy of the deck, so the file the app loads and the file
-            // scripts/check-deck.sh hashes cannot diverge. The link itself is
-            // asserted by that script.
+            // Resources/deck.v1.json holds the REAL deck bytes, and
+            // data/deck.v1.json — the path SPEC §4 names — is a symlink to it.
+            //
+            // The link points this way round for a reason worth not
+            // rediscovering: SwiftPM copies resource symlinks verbatim, so a
+            // link *inside* Resources/ arrives in the built bundle still
+            // pointing at a relative path that no longer resolves, and the app
+            // ships with no deck at all. That shipped once and was caught by a
+            // failing test. scripts/check-deck.sh asserts the two paths are
+            // byte-identical, by content rather than by link direction.
             resources: [.copy("Resources/deck.v1.json")],
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),

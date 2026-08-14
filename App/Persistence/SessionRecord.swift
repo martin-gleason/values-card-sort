@@ -22,9 +22,19 @@ import ValuesCardSortKit
 /// sort and filter without decoding every session.
 @Model
 final class SessionRecord {
-    /// Mirrors `SessionState.id`. Unique so a restored backup cannot produce
-    /// two records for one session.
-    #Unique<SessionRecord>([\.sessionID])
+    /// Mirrors `SessionState.id`.
+    ///
+    /// Deliberately **not** a `#Unique` constraint. SPEC §3 leaves the CloudKit
+    /// door open — "no design decision may preclude adding CloudKit later
+    /// without a rewrite" — and CloudKit-backed SwiftData containers reject
+    /// unique constraints outright, so adding one here would be exactly such a
+    /// decision. Everything else in this model is already CloudKit-shaped: a
+    /// default on every stored property, `completedAt` optional, no
+    /// unsupported constructs.
+    ///
+    /// Identity is enforced where it can be: `update(to:)` refuses to repoint a
+    /// record at a different session, and `SessionStore.start` refuses to open
+    /// a second in-progress one.
     var sessionID: UUID = UUID()
 
     var startedAt: Date = Date.distantPast

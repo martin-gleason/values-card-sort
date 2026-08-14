@@ -131,7 +131,10 @@ public struct SessionState: Codable, Hashable, Sendable, Identifiable {
     public var totalCards: Int { shuffleOrder.count + cardsAddedAfterStart }
 
     private var cardsAddedAfterStart: Int {
-        customCards.filter { !shuffleOrder.contains($0.cardID) }.count
+        // Set membership rather than `shuffleOrder.contains` inside a filter,
+        // which was quadratic and is read on every sort-screen redraw.
+        let atStart = Set(shuffleOrder)
+        return customCards.count { !atStart.contains($0.cardID) }
     }
 
     public var sortedCount: Int { totalCards - queue.count }
@@ -156,6 +159,26 @@ public struct SessionState: Codable, Hashable, Sendable, Identifiable {
 
         var expected = Set(shuffleOrder)
         expected.formUnion(customCards.map(\.cardID))
-        return Set(placed) == expected
+        guard Set(placed) == expected else { return false }
+
+        // The cull and rank fields (R5–R7). F1 does not mutate these, but the
+        // invariant is written now so F3 and F4 inherit it rather than have it
+        // retrofitted after a bug — an adversarial review flagged their absence.
+        let mostImportant = Set(self[.mostImportant])
+        let veryImportant = Set(self[.veryImportant])
+
+        // A cut card must be in the pile being culled (R5).
+        guard Set(cut).count == cut.count, Set(cut).isSubset(of: mostImportant) else { return false }
+        // A promotion must come out of Very important, and cannot also be cut.
+        guard Set(promotions).count == promotions.count,
+              Set(promotions).isSubset(of: veryImportant),
+              Set(promotions).isDisjoint(with: Set(cut))
+        else { return false }
+        // Ranking holds real, distinct cards (R7).
+        guard Set(ranking).count == ranking.count, Set(ranking).isSubset(of: expected) else {
+            return false
+        }
+
+        return true
     }
 }

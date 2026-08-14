@@ -12,23 +12,34 @@ struct ValuesCardSortApp: App {
     /// (SPEC §2, §4).
     private let deckResult: Result<Deck, any Error> = Result { try DeckLoader.load() }
 
-    private let container: ModelContainer
+    private let storeResult: Result<ModelContainer, any Error>
 
     init() {
-        do {
+        storeResult = Result {
             // Local store only. No CloudKit in 1.0 (SPEC §3), and nothing here
             // may imply data leaves the device (SPEC §7).
-            let ephemeral = CommandLine.arguments.contains("--uitesting-ephemeral-store")
             let configuration = ModelConfiguration(
                 "ValuesCardSort",
-                isStoredInMemoryOnly: ephemeral,
+                isStoredInMemoryOnly: Self.usesEphemeralStore,
                 cloudKitDatabase: .none
             )
-            if !ephemeral { try Self.ensureStoreDirectoryExists() }
-            container = try ModelContainer(for: SessionRecord.self, configurations: configuration)
-        } catch {
-            fatalError("Could not open the local session store: \(error)")
+            if !Self.usesEphemeralStore { try Self.ensureStoreDirectoryExists() }
+            return try ModelContainer(for: SessionRecord.self, configurations: configuration)
         }
+    }
+
+    /// UI tests run against a fresh in-memory store so the audit sees a
+    /// deterministic screen.
+    ///
+    /// Debug-only: in a release build this is always `false`, so a shipping app
+    /// cannot be launched with `--args` into a store that silently discards the
+    /// sorter's work.
+    private static var usesEphemeralStore: Bool {
+        #if DEBUG
+            return CommandLine.arguments.contains("--uitesting-ephemeral-store")
+        #else
+            return false
+        #endif
     }
 
     /// SwiftData writes its store into Application Support, which does not
@@ -50,9 +61,18 @@ struct ValuesCardSortApp: App {
 
     var body: some Scene {
         WindowGroup {
-            RootView(deckResult: deckResult)
+            // A corrupt store is not a reason to crash on launch with no way
+            // out. The deck failure already gets an honest screen; this one
+            // gets the same treatment, so the sorter can at least read what
+            // went wrong and reach the About screen.
+            switch storeResult {
+            case .success(let container):
+                RootView(deckResult: deckResult)
+                    .modelContainer(container)
+            case .failure(let error):
+                StoreUnavailableView(error: error)
+            }
         }
-        .modelContainer(container)
         #if os(macOS)
             .defaultSize(width: 560, height: 760)
         #endif

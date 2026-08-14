@@ -20,25 +20,53 @@ struct SessionStore {
 
     // MARK: - Reading
 
-    /// The single in-progress session, if there is one.
+    /// In-progress sessions, newest first.
     ///
-    /// If a bad merge or restored backup ever produced more than one, the
-    /// newest wins and the rest are archived rather than deleted — losing a
-    /// user's sort silently would be the worst possible failure here.
-    func inProgress() throws -> SessionRecord? {
-        let descriptor = FetchDescriptor<SessionRecord>(
-            predicate: #Predicate { $0.completedAt == nil },
-            sortBy: [SortDescriptor(\.startedAt, order: .reverse)]
+    /// SPEC §5.1 allows at most one, and ``start(deck:customCards:themeID:)``
+    /// is what keeps it that way. This returns a list rather than an optional
+    /// because a restored backup — or CloudKit later, whose door SPEC §3
+    /// requires stay open — can produce more than one through no fault of the
+    /// app, and the store must be able to say so rather than pretend.
+    func inProgressSessions() throws -> [SessionRecord] {
+        try context.fetch(
+            FetchDescriptor<SessionRecord>(
+                predicate: #Predicate { $0.completedAt == nil },
+                sortBy: [SortDescriptor(\.startedAt, order: .reverse)]
+            )
         )
-        let records = try context.fetch(descriptor)
-        guard let newest = records.first else { return nil }
+    }
+
+    /// The session to resume: the newest in-progress one.
+    ///
+    /// **This is a read and it does not mutate.** An earlier version archived
+    /// the extras here, which was wrong twice over: it wrote `completedAt` on
+    /// the record while leaving the encoded blob saying `nil`, so the next
+    /// ordinary read-modify-write silently un-archived it; and it permanently
+    /// ended a real in-progress sort with no user interaction, which R9 says
+    /// requires explicit confirmation. Resolving a duplicate is a decision for
+    /// the person whose sort it is — see ``archiveDuplicateInProgressSessions``.
+    func inProgress() throws -> SessionRecord? {
+        try inProgressSessions().first
+    }
+
+    /// Ends every in-progress session except the newest, archiving each at its
+    /// own start date.
+    ///
+    /// Call only after the sorter has confirmed (R9). Goes through
+    /// ``SessionRecord/update(to:)`` so the blob and the queryable columns stay
+    /// in step — the bug this method exists to not repeat.
+    @discardableResult
+    func archiveDuplicateInProgressSessions() throws -> Int {
+        let records = try inProgressSessions()
+        guard records.count > 1 else { return 0 }
 
         for stale in records.dropFirst() {
-            stale.completedAt = stale.startedAt
+            var state = try stale.state()
+            state.completedAt = stale.startedAt
+            try stale.update(to: state)
         }
-        if records.count > 1 { try context.save() }
-
-        return newest
+        try context.save()
+        return records.count - 1
     }
 
     /// Completed sessions, newest first (SPEC §5.4).
@@ -60,10 +88,15 @@ struct SessionStore {
     /// Custom cards the sorter has written in any past session (SPEC §5.1:
     /// they are offered again at the start of a new one — they are the user's
     /// personal deck extension, not session-scoped data).
+    ///
+    /// Throws if any stored session cannot be decoded. `SessionRecord.state()`
+    /// is explicit that a session which will not decode is data loss; swallowing
+    /// it here with `try?` would silently drop the sorter's own written values
+    /// out of the offer and tell them nothing.
     func knownCustomCards() throws -> [CustomCard] {
         var byID: [UUID: CustomCard] = [:]
         for record in try allSessions() {
-            for card in (try? record.state())?.customCards ?? [] {
+            for card in try record.state().customCards {
                 byID[card.id] = card
             }
         }

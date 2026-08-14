@@ -134,6 +134,76 @@ struct PersistenceTests {
         #expect(known.first?.id == mine.id)
     }
 
+    /// Regression: `inProgress()` used to archive duplicates by writing
+    /// `completedAt` on the record while leaving the encoded blob saying `nil`.
+    /// The next ordinary read-modify-write then un-archived it, so the
+    /// at-most-one invariant did not survive a write — and it ended a live sort
+    /// with no confirmation, which R9 forbids.
+    @Test("reading the in-progress session does not mutate anything (R9)")
+    func inProgressIsAPureRead() throws {
+        let (store, container) = try makeStore()
+        _ = container
+        let deck = try deck()
+
+        let first = try store.start(deck: deck)
+        // A second in-progress session, as a restored backup could produce.
+        let intruder = try SessionRecord(state: SessionState(deck: deck))
+        store.context.insert(intruder)
+        try store.context.save()
+
+        #expect(try store.inProgressSessions().count == 2)
+
+        _ = try store.inProgress()
+
+        // Nothing was archived behind the sorter's back.
+        #expect(try store.inProgressSessions().count == 2)
+        #expect(first.completedAt == nil)
+        #expect(try first.state().completedAt == nil)
+    }
+
+    @Test("archiving duplicates keeps the blob and the columns in step")
+    func archiveDuplicatesIsConsistent() throws {
+        let (store, container) = try makeStore()
+        _ = container
+        let deck = try deck()
+
+        let newest = try store.start(deck: deck)
+        let older = try SessionRecord(
+            state: SessionState(deck: deck, id: UUID(), startedAt: .distantPast, using: &Self.seed)
+        )
+        store.context.insert(older)
+        try store.context.save()
+
+        #expect(try store.archiveDuplicateInProgressSessions() == 1)
+
+        // The newest survives as the resumable one.
+        #expect(try store.inProgressSessions().map(\.sessionID) == [newest.sessionID])
+
+        // The archived one agrees with itself — the bug was that it did not.
+        #expect(older.completedAt != nil)
+        #expect(try older.state().completedAt == older.completedAt)
+
+        // And a subsequent ordinary save does not resurrect it.
+        var state = try older.state()
+        state.themeID = "civic"
+        try store.save(state, to: older)
+        #expect(older.completedAt != nil)
+        #expect(try store.inProgressSessions().count == 1)
+    }
+
+    @Test("a corrupt session surfaces rather than silently dropping custom cards")
+    func corruptSessionSurfaces() throws {
+        let (store, container) = try makeStore()
+        _ = container
+
+        let record = try store.start(deck: try deck())
+        record.stateData = Data("not a session".utf8)
+
+        #expect(throws: (any Error).self) { try store.knownCustomCards() }
+    }
+
+    nonisolated(unsafe) static var seed = SeededGenerator(seed: 4242)
+
     @Test("a record cannot be repointed at a different session")
     func updateGuardsIdentity() throws {
         let (store, container) = try makeStore()

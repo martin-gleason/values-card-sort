@@ -26,6 +26,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Privacy gate self-test
+        # The gate's own lexer has tests, because an adversarial review showed
+        # one line of ordinary Swift could blind it for a whole file.
+        run: python3 scripts/test_check_privacy.py
       - name: Deck fidelity (SPEC §4)
         run: ./scripts/check-deck.sh
       - name: Privacy (SPEC §7)
@@ -40,6 +44,10 @@ jobs:
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
+      - name: Select Xcode
+        # D1 ratifies "built against the current SDK". Without this the runner
+        # picks its default Xcode, which is not that.
+        run: sudo xcode-select -switch /Applications/Xcode_26.app
       - name: Show toolchain
         run: swift --version
       - name: Run rule and fidelity tests
@@ -55,7 +63,11 @@ jobs:
       matrix:
         include:
           - platform: iOS
-            destination: 'platform=iOS Simulator,name=iPhone 16,OS=latest'
+            # Deliberately generic. A pinned model name breaks whenever the
+            # runner image or Xcode version changes its simulator set — Xcode 26
+            # has no "iPhone 16" at all — and this is the ONLY job that runs the
+            # SPEC §6 accessibility gate while macOS UI tests wait on C2.
+            destination: 'platform=iOS Simulator,OS=latest,name=Any iOS Simulator Device'
             # Unit tests AND the SPEC §6 accessibility gate.
             extra: ''
           - platform: macOS
@@ -71,6 +83,8 @@ jobs:
             extra: '-skip-testing:ValuesCardSortUITests'
     steps:
       - uses: actions/checkout@v4
+      - name: Select Xcode
+        run: sudo xcode-select -switch /Applications/Xcode_26.app
       - name: Install XcodeGen
         run: brew install xcodegen
       - name: Generate project
