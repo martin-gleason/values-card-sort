@@ -78,6 +78,45 @@ Worth recording, because it is the argument for building them first:
    to strip comments before matching — a gate that cries wolf is a gate people
    learn to ignore.
 
+## Adversarial review (CLAUDE.md workflow step 4)
+
+Run before calling F1 done. It found **11 findings** in work this document had
+already reported as verified, which is the argument for the step. All fixed in
+`6541fb4`; each fixed gate was re-tested against the exploit that beat it.
+
+The three that mattered most:
+
+1. **The privacy gate could be blinded for an entire file by one line.** A
+   nested string inside `\(…)` interpolation was read as closing the outer
+   string, so `"prefix \("/*") suffix"` opened a block comment that never
+   closed and hid a real `URLSession` call further down. Reproduced, then the
+   scanner was replaced with a context-stack lexer and given 27 tests of its
+   own, including that exploit. TESTING.md layer 5 calls this gate
+   "deterministic, not advisory" — it was advisory.
+2. **`SessionStore.inProgress()` violated R9 from inside a getter.** It
+   archived duplicate sessions by writing `completedAt` on the record while
+   leaving the encoded blob saying `nil`, so the next ordinary
+   read-modify-write un-archived it; and it permanently ended a live sort with
+   no confirmation. Now a pure read, with archiving as an explicit call.
+3. **CI could not have run the accessibility gate.** The iOS destination was
+   pinned to `iPhone 16`, which does not exist under Xcode 26, and no Xcode
+   version was selected. Since macOS UI tests wait on C2, that job is the only
+   place SPEC §6 is enforced.
+
+Also fixed: `#Unique` foreclosing the CloudKit door SPEC §3 requires stay open;
+`Package.swift` documenting the deck symlink backwards (the exact configuration
+that shipped an empty bundle); `try?` swallowing a decode failure the code
+elsewhere insists must surface; `isWellFormed` not covering the fields F3/F4
+will mutate; `fatalError` on store-open; a debug-only test flag live in release
+builds; the SPDX gate covering only `.swift`; and a quadratic path.
+
+Confirmed clean by the review: hash equivalence between the Python and Swift
+canonical serializations (verified by execution against the real deck *and* an
+adversarial Unicode fixture — precomposed vs decomposed, astral-plane, ZWJ,
+BOM, CRLF, embedded quotes — both matching); deck immutability; layering
+(zero SwiftData/SwiftUI in the rule package); scope (no F2–F10 leakage); and
+R1/R10 fidelity against the reference implementation.
+
 ## Known limitations
 
 - **macOS UI tests are blocked on chore C2.** macOS XCUITest requires a real
