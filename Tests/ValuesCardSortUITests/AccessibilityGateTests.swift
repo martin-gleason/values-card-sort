@@ -105,6 +105,28 @@ final class AccessibilityGateTests: XCTestCase {
         #endif
     }
 
+    /// Exemptions for the largest-size runs: **contrast only, plus
+    /// `.dynamicType` on elements the app does not own.**
+    ///
+    /// The blanket `.dynamicType` exemption above is justified by the claim
+    /// that the flagged views come back unflagged at `AccessibilityXXXL`.
+    /// Carrying a blanket exemption into these tests anyway would switch the
+    /// check off at exactly the size SPEC §6 names — a future screen with a
+    /// hard-coded `.font(.system(size: 17))` would sail through. An adversarial
+    /// review caught that, so these runs hold the justification to its word.
+    ///
+    /// Running fully strict leaves exactly one issue, on an element with no
+    /// label and no identifier — system scaffolding inside a stock `List`, not
+    /// a view authored here. So the scope is by *ownership* rather than by
+    /// rule: `.dynamicType` still fails on anything the app actually wrote.
+    private static var largestSizeExemptions: XCUIAccessibilityAuditType { .contrast }
+
+    #if os(macOS)
+        private static var unownedOnly: XCUIAccessibilityAuditType { [] }
+    #else
+        private static var unownedOnly: XCUIAccessibilityAuditType { .dynamicType }
+    #endif
+
     func test_A11y_launchScreenPassesAccessibilityAudit() throws {
         let app = launch()
         XCTAssertTrue(app.wait(for: .runningForeground, timeout: 10))
@@ -115,7 +137,7 @@ final class AccessibilityGateTests: XCTestCase {
     func test_A11y_launchScreenAtLargestDynamicTypeSize() throws {
         let app = launch(contentSize: "UICTContentSizeCategoryAccessibilityXXXL")
         XCTAssertTrue(app.wait(for: .runningForeground, timeout: 10))
-        try assertAccessible(app, ignoring: Self.stockChromeExemptions)
+        try assertAccessible(app, ignoring: Self.largestSizeExemptions, onUnownedElements: Self.unownedOnly)
     }
 
     /// The instrument section sits below the fold, so the launch-screen audits
@@ -133,7 +155,7 @@ final class AccessibilityGateTests: XCTestCase {
         }
         XCTAssertTrue(count.exists, "could not scroll the instrument section into view")
 
-        try assertAccessible(app, ignoring: Self.stockChromeExemptions)
+        try assertAccessible(app, ignoring: Self.largestSizeExemptions, onUnownedElements: Self.unownedOnly)
     }
 
     func test_A11y_startingASortKeepsTheScreenAccessible() throws {

@@ -10,9 +10,17 @@ import XCTest
 /// failure per issue, naming the element, so SPEC §6 stays enforceable as the
 /// app grows.
 extension XCTestCase {
+    /// - Parameters:
+    ///   - ignoring: audit rules switched off entirely for this screen.
+    ///   - onUnownedElements: audit rules switched off **only** for elements the
+    ///     app does not own — no accessibility identifier and no label, i.e.
+    ///     system-supplied scaffolding inside stock containers. A rule listed
+    ///     here still fails on any view the app actually authored, which is the
+    ///     difference between scoping an exemption and suppressing a check.
     func assertAccessible(
         _ app: XCUIApplication,
         ignoring ignoredTypes: XCUIAccessibilityAuditType = [],
+        onUnownedElements unownedTypes: XCUIAccessibilityAuditType = [],
         file: StaticString = #filePath,
         line: UInt = #line
     ) throws {
@@ -23,6 +31,16 @@ extension XCTestCase {
 
         try app.performAccessibilityAudit(for: .all.subtracting(ignoredTypes)) { issue in
             let element = issue.element
+
+            // An element with neither an identifier nor a label was not
+            // authored here — it is scaffolding inside a stock container.
+            let isUnowned = (element?.identifier ?? "").isEmpty
+                && (element?.label ?? "").isEmpty
+            if isUnowned, !unownedTypes.isEmpty, unownedTypes.contains(issue.auditType) {
+                collector.skipped.append("\(issue.auditType.gateName) on an unowned element")
+                return true
+            }
+
             let description = """
                 \(issue.auditType.gateName): \(issue.compactDescription)
                     element: \(element?.elementType.description ?? "unknown") \
@@ -34,6 +52,10 @@ extension XCTestCase {
             // Report every issue rather than stopping at the first, so one run
             // shows the whole screen's problems.
             return true
+        }
+
+        for skip in Set(collector.skipped).sorted() {
+            print("  a11y: scoped out — \(skip)")
         }
 
         guard collector.issues.isEmpty else {
@@ -53,6 +75,9 @@ extension XCTestCase {
 /// Gathers audit issues across the synchronous audit callback.
 private final class IssueCollector: @unchecked Sendable {
     var issues: [String] = []
+    /// Recorded and printed rather than discarded — a scoped exemption that
+    /// nobody ever sees is indistinguishable from a hole.
+    var skipped: [String] = []
 }
 
 extension XCUIAccessibilityAuditType {

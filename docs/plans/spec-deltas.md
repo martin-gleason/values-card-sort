@@ -130,10 +130,18 @@ that no one would have noticed reading the code.
   which SPEC §3.1 deliberately makes Apple's ("the chrome is Apple's; we write
   none of it").
 - **`.dynamicType`** — "partially unsupported" on four plain `Text` views using
-  stock text styles. Checked rather than assumed: re-running the audit at
-  `AccessibilityXXXL` with those views scrolled into view leaves them unflagged,
-  and the only surviving issue is an element with no label and no identifier
-  that the app does not own.
+  stock text styles, at the *default* size. Checked rather than assumed:
+  re-running the audit at `AccessibilityXXXL` with those views scrolled into
+  view leaves all four unflagged, and exactly one issue survives, on an element
+  with no label and no identifier that the app did not author.
+
+  Adversarial review then caught that the blanket exemption was being carried
+  into the largest-size tests too, where by that very argument it was not
+  needed — which would have switched the check off at exactly the size SPEC §6
+  names. Those runs are now scoped by **element ownership** instead: at
+  `AccessibilityXXXL`, `.dynamicType` is waived only for elements with no
+  identifier and no label, so it still fails on any view the app actually
+  wrote. Waived issues are printed on every run rather than silently dropped.
 
 **`.textClipped` is never exempted** — it is the check that found the real bug.
 
