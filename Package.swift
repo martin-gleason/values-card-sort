@@ -23,17 +23,14 @@ let package = Package(
     targets: [
         .target(
             name: "ValuesCardSortKit",
-            // Resources/deck.v1.json holds the REAL deck bytes, and
-            // data/deck.v1.json — the path SPEC §4 names — is a symlink to it.
+            // No resources, deliberately.
             //
-            // The link points this way round for a reason worth not
-            // rediscovering: SwiftPM copies resource symlinks verbatim, so a
-            // link *inside* Resources/ arrives in the built bundle still
-            // pointing at a relative path that no longer resolves, and the app
-            // ships with no deck at all. That shipped once and was caught by a
-            // failing test. scripts/check-deck.sh asserts the two paths are
-            // byte-identical, by content rather than by link direction.
-            resources: [.copy("Resources/deck.v1.json")],
+            // The deck is COMPILED IN, generated from data/deck.v1.json into
+            // Deck/Deck.v1.generated.swift by scripts/generate_deck.py. The
+            // shipped binary therefore carries no parsable copy of the
+            // instrument text — nothing to swap on device, nothing to edit
+            // quietly in a diff. See that script for the full rationale; this
+            // is a hardening decision, not a packaging convenience.
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
         .testTarget(

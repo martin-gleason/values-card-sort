@@ -5,7 +5,6 @@ import Foundation
 
 /// Ways the deck contract can be violated (SPEC §4).
 public enum DeckError: Error, Equatable, CustomStringConvertible {
-    case resourceMissing
     case malformed(String)
     case countMismatch(declared: Int, actual: Int)
     case nonContiguousIDs
@@ -15,8 +14,6 @@ public enum DeckError: Error, Equatable, CustomStringConvertible {
 
     public var description: String {
         switch self {
-        case .resourceMissing:
-            "deck.v1.json is not in the bundle. The app cannot run without the instrument."
         case .malformed(let detail):
             "deck.v1.json is malformed: \(detail)"
         case .countMismatch(let declared, let actual):
@@ -43,21 +40,23 @@ extension Deck {
     /// The instrument has 83 numbered cards (SPEC §2, verified against source).
     public static let expectedCardCount = 83
 
-    /// SHA-256 of the canonical card payload of `deck.v1.json`.
+    /// SHA-256 of the canonical card payload (SPEC §4).
     ///
-    /// This is deliberately *not* a hash of the file. Chore C1's sign-off edits
-    /// `instrument.verification` inside the file, which would break a file
-    /// hash while changing no card — so the file hash is pinned in SPEC §4 and
-    /// `scripts/check-deck.sh`, and this payload hash is what the running app
-    /// enforces. Card drift fails here forever; metadata edits do not.
+    /// **Hand-pinned here on purpose, and not emitted by the generator.** If
+    /// this lived in `Deck.v1.generated.swift`, altering a card's text and the
+    /// hash guarding it would be one edit to one file. Keeping it in
+    /// hand-written source means tampering has to touch two files that a
+    /// reviewer reads differently — and the same constant is pinned a third
+    /// time in `scripts/check_deck.py` and a fourth in SPEC §4.
     ///
-    /// See ``canonicalPayload(of:)`` for the serialization.
+    /// Re-checked at runtime by ``DeckLoader/validate(_:)``, so a patched
+    /// binary fails too and the app refuses to run a sort.
     public static let payloadSHA256 = "10a4c3938226a83f72724809d91f817051d29164f517554b5b3ac6f6775c25d4"
 
     /// The canonical, language-neutral serialization the payload hash covers.
     ///
     /// Separator-delimited rather than JSON so that this Swift code and
-    /// `scripts/check_deck.py` cannot disagree about key ordering or string
+    /// `scripts/generate_deck.py` cannot disagree about key ordering or string
     /// escaping — the two must produce byte-identical output or the pinned
     /// constant is meaningless. Deck v1 is pure ASCII, so the unit (U+001F)
     /// and record (U+001E) separators cannot collide with card data.
@@ -70,43 +69,27 @@ extension Deck {
     }
 }
 
-/// Loads and validates the bundled deck.
+/// Provides the compiled deck, validated.
+///
+/// There is no file to load. The deck is generated into Swift source from
+/// `data/deck.v1.json` and compiled into the binary, so the app ships no
+/// parsable copy of the instrument text (SPEC §4, ratified 2026-08-14). The
+/// name is kept because "load the deck" is still what callers mean.
 ///
 /// Validation is not optional and not a test-only path: a deck that fails the
 /// contract must not reach a user, because the whole claim of this app is that
-/// it is faithful to the printed instrument.
+/// it is faithful to the printed instrument. Re-checking a compiled constant
+/// looks redundant and is not — it catches a patched binary, which is the one
+/// tampering route that compiling the deck in does not by itself close.
 public enum DeckLoader {
-    /// Loads `deck.v1.json` from the package bundle.
     public static func load() throws -> Deck {
-        guard let url = Bundle.module.url(forResource: "deck.v1", withExtension: "json") else {
-            throw DeckError.resourceMissing
-        }
-        return try load(contentsOf: url)
+        try validated(Deck.v1)
     }
 
-    public static func load(contentsOf url: URL) throws -> Deck {
-        let data: Data
-        do {
-            // The deck is a bundle resource resolved by `Bundle.module`. The
-            // guard makes that structural rather than assumed: `Data(contentsOf:)`
-            // performs a synchronous GET for an http(s) URL, so a caller passing
-            // a remote one would breach SPEC §7 through this line.
-            guard url.isFileURL else { throw DeckError.resourceMissing }
-            // privacy-ok(file-url): guarded above; cannot reach the network.
-            data = try Data(contentsOf: url)
-        } catch {
-            throw DeckError.resourceMissing
-        }
-        return try decode(data)
-    }
-
-    public static func decode(_ data: Data) throws -> Deck {
-        let deck: Deck
-        do {
-            deck = try JSONDecoder().decode(Deck.self, from: data)
-        } catch {
-            throw DeckError.malformed(String(describing: error))
-        }
+    /// Validates any deck. Used by the tests to prove the checks reject the
+    /// decks they are supposed to reject.
+    @discardableResult
+    public static func validated(_ deck: Deck) throws -> Deck {
         try validate(deck)
         return deck
     }

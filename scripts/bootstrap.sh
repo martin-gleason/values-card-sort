@@ -21,6 +21,9 @@ EOF
   exit 1
 fi
 
+echo "Regenerating the compiled deck from data/deck.v1.json…"
+python3 scripts/generate_deck.py
+
 echo "Generating ValuesCardSort.xcodeproj from project.yml…"
 xcodegen generate --quiet
 echo "Done. Open ValuesCardSort.xcodeproj, or:"

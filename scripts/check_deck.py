@@ -32,13 +32,14 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 DECK = ROOT / "data" / "deck.v1.json"
 SCHEMA = ROOT / "data" / "deck.schema.json"
-RESOURCE_LINK = ROOT / "Sources" / "ValuesCardSortKit" / "Resources" / "deck.v1.json"
+GENERATED = ROOT / "Sources" / "ValuesCardSortKit" / "Deck" / "Deck.v1.generated.swift"
 
 EXPECTED_COUNT = 83
 FILE_SHA256 = "13a3db92c997eb98679237fe3ddf22b40d4379528a9f991bbf1894ef6847ad8d"
@@ -178,31 +179,45 @@ def main() -> int:
         print("       The 83 cards themselves changed. This never passes without a ratified")
         print("       spec delta and a new versioned deck file (SPEC §4).")
 
-    # The package resource must be the same bytes the gate just checked, or the
-    # app could ship a deck no CI job has ever seen.
+    # The compiled deck must be exactly what this JSON generates.
     #
-    # The real file lives in the package's Resources directory and
-    # data/deck.v1.json is a symlink to it, not the other way round. SPM copies
-    # resource symlinks verbatim, so a link *inside* Resources would arrive in
-    # the built bundle still pointing at a relative path that no longer
-    # resolves — the deck would silently vanish at runtime. Pointing the link
-    # the other way keeps SPEC §4's path working for every reader while giving
-    # SPM real bytes to copy.
+    # The app ships Swift, not JSON (SPEC §4, ratified 2026-08-14): there is no
+    # deck resource in the bundle to swap, and no soft JSON target in a diff.
+    # That only holds if the generated Swift cannot drift from its source, so
+    # regeneration is asserted here rather than trusted.
     #
-    # Asserted by content rather than by link direction, so this still holds if
-    # an editor replaces the symlink with a copy during chore C1.
-    if RESOURCE_LINK.exists():
-        resource_hash = hashlib.sha256(RESOURCE_LINK.read_bytes()).hexdigest()
-        check(resource_hash == file_hash,
-              "data/deck.v1.json and the package resource are byte-identical")
-        if resource_hash != file_hash:
-            print(f"       {DECK.relative_to(ROOT)}: {file_hash}")
-            print(f"       {RESOURCE_LINK.relative_to(ROOT)}: {resource_hash}")
-            print("       These must never diverge. Restore the symlink:")
-            print("         ln -sf ../Sources/ValuesCardSortKit/Resources/deck.v1.json data/deck.v1.json")
+    # Together with the two hashes this means a card's text cannot be changed
+    # by editing the JSON (hashes fail), by editing the generated Swift
+    # (regeneration fails), or by patching the binary (the app re-checks the
+    # payload hash at launch and refuses to run).
+    generator = ROOT / "scripts" / "generate_deck.py"
+    if generator.exists():
+        result = subprocess.run(
+            [sys.executable, str(generator), "--check"],
+            capture_output=True,
+            text=True,
+        )
+        check(result.returncode == 0,
+              "compiled deck matches data/deck.v1.json (no hand edits)")
+        if result.returncode != 0:
+            for line in (result.stdout + result.stderr).strip().splitlines():
+                print(f"       {line}")
     else:
-        print("  FAIL package deck resource is missing; the app would ship no deck")
-        failures.append("package deck resource missing")
+        print("  FAIL scripts/generate_deck.py is missing; the deck cannot be verified")
+        failures.append("generator missing")
+
+    check(GENERATED.exists(),
+          "the deck is compiled into Swift, not bundled as a loadable resource")
+
+    # There must be no JSON deck anywhere the app could load at runtime.
+    stray = [
+        path.relative_to(ROOT)
+        for path in ROOT.rglob("deck.v*.json")
+        if "data" not in path.relative_to(ROOT).parts and ".build" not in path.parts
+    ]
+    check(not stray, "no deck JSON outside data/ (nothing shippable to swap)")
+    for path in stray:
+        print(f"       stray: {path}")
 
     print()
     if failures:

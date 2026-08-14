@@ -30,7 +30,7 @@ Every source file carries an SPDX header. CI enforces it:
 
 ```
 brew install xcodegen        # build-time only; nothing links into the app
-./scripts/bootstrap.sh       # generates ValuesCardSort.xcodeproj
+./scripts/bootstrap.sh       # compiles the deck + generates ValuesCardSort.xcodeproj
 swift test                   # rule + deck tests, fast, no simulator
 ```
 
@@ -44,9 +44,16 @@ These are contract, not preference. A PR that breaks one will not merge.
 - **Privacy (SPEC §7).** No network code, no analytics, no third-party SDKs in
   the app target. Zero exceptions without ratification. `scripts/check-privacy.sh`
   enforces it. Attribution *links* are fine — they open in the system browser.
-- **The deck is immutable (SPEC §4).** `data/deck.v1.json` never changes. A deck
-  change is a new versioned file plus a ratified spec delta. Two hashes are
-  pinned, and CI checks both.
+- **The deck is immutable, and compiled in (SPEC §4).** `data/deck.v1.json` is a
+  *build input*: `scripts/generate_deck.py` compiles it into Swift, and the app
+  ships no loadable deck file. A deck change is a new versioned file plus a
+  ratified spec delta. Four locks guard it — two pinned hashes, a regeneration
+  check, and a runtime hash check the app enforces at launch. Do not edit the
+  generated Swift; run `./scripts/generate-deck.sh`.
+
+  This is deliberate hardening, not ceremony. The app puts text in front of
+  people at hard moments, and a card altered to something cruel would be easy
+  to miss in a large diff.
 - **Accessibility is a gate, not a feature (SPEC §6).** No screen is done until
   it passes at the largest Dynamic Type size with VoiceOver, 44pt targets, and
   Reduce Motion honored. `Tests/ValuesCardSortUITests` runs the audit.
@@ -70,7 +77,8 @@ quietly picking one.
 ## Before you open the PR
 
 ```
-./scripts/check-deck.sh          # deck fidelity
+python3 scripts/test_check_privacy.py   # the privacy gate's own lexer tests
+./scripts/check-deck.sh          # deck fidelity + regeneration
 ./scripts/check-privacy.sh       # no networking APIs
 ./scripts/check-spdx.sh          # licence headers
 swift test                       # rules

@@ -76,31 +76,31 @@ with card data.
 
 ---
 
-## D4 — R8: the export date is `completedAt`, not "now" · **Proposed**
+## D4 — R8: the export date and locale · **Ratified 2026-08-14**
 
-**Reference/native conflict, flagged not silently resolved** (CLAUDE.md).
+**Reference/native conflict, resolved in favour of native.**
 
 `reference/valuescardsort.jsx:238` computes the export date as
-`new Date().toLocaleDateString("en-US", …)` — evaluated when the markdown is
-rendered, in the browser's locale. Two consequences:
+`new Date().toLocaleDateString("en-US", …)` at render time, so re-exporting a
+session completed last March stamps it with **today's** date, and the output
+varies by machine region.
 
-1. Re-exporting a session completed last March stamps it with **today's** date.
-   SPEC §5.2 R8 says the export carries the "completion date", and SPEC §5.4
-   requires re-export from session detail, so this is reachable in normal use.
-2. The output is locale-dependent, so the golden-file test TESTING.md layer 2
-   requires would pass or fail depending on the machine's region.
+**Ratified:** the export renders `session.completedAt`.
 
-**Proposal.** The export renders `session.completedAt`. The golden-file test
-pins a fixed date and a fixed locale; the shipping app formats in the user's
-locale, since an exported personal document should read naturally to its owner.
+**Ratified (the F5 sub-question, answered now):** the body is **locale
+formatted as well**. Dates and numbers in the export follow the reader's
+locale, not a fixed `en_US_POSIX`. The document belongs to the person who made
+it and should read naturally to them, even while the pile labels and the
+attribution line remain fixed English strings in 1.0 (localization is roadmap
+"Later", SPEC §9).
 
-**Open sub-question for F5:** should the *body* of the export be locale-
-formatted at all, given the pile labels and attribution are fixed English
-strings in 1.0? Consistent English (`en_US_POSIX`) may read better than a
-half-localized document. Answer at the F5 gate.
+**Consequence for the harness:** R8's golden-file test must therefore pin both
+a fixed date *and* a fixed locale, or it will pass or fail depending on the
+machine's region. F5 builds it that way — the test fixes the locale, the app
+does not.
 
-**SPEC edit:** §5.2 R8 — name `completedAt` explicitly, and add a line on
-locale.
+**SPEC edit:** §5.2 R8 — name `completedAt` explicitly; add that export
+formatting is locale-aware and the golden test pins a locale.
 
 ---
 
@@ -159,40 +159,50 @@ the tests flip.
 
 ---
 
-## D6 — deck file location · **Proposed — but already shipped**
+## D6 — the deck is compiled in, not bundled as JSON · **Ratified 2026-08-14**
 
-The real deck bytes now live at
-`Sources/ValuesCardSortKit/Resources/deck.v1.json`, and **`data/deck.v1.json`
-is a symlink to it**.
+**Directed by the maintainer**, on the grounds that an editable JSON deck is a
+vector for harm: this app puts text in front of people at hard moments, and a
+card's descriptor altered to something cruel would be easy to miss in a large
+JSON diff. Reading the instrument on GitHub is fine and desirable; *editing* it
+is what had to be closed off.
 
-**Why.** SwiftPM copies resource symlinks verbatim into the built bundle, so a
-link *inside* `Resources/` arrives at runtime still pointing at a relative path
-that no longer resolves — the app silently ships with no deck. (Found by the
-deck test failing, not by reasoning about it.) Pointing the link the other way
-gives SwiftPM real bytes to copy while keeping SPEC §4's path working for every
-reader, script, and human.
+**What changed.** `data/deck.v1.json` is a real file again at SPEC §4's path,
+and it is now a **build input, not a shipped artifact**.
+`scripts/generate_deck.py` compiles it into
+`Sources/ValuesCardSortKit/Deck/Deck.v1.generated.swift`. The app links Swift
+constants; the bundle contains no `.json` and no resource bundle at all
+(verified against a built `.app`). The symlink is gone.
 
-`scripts/check-deck.sh` asserts the two paths are byte-identical, by content
-rather than by link direction, so this still holds if an editor replaces the
-symlink with a copy during C1.
+**Four independent locks, each verified by executing the attack:**
 
-**Consequence for C1:** editing `instrument.verification` through
-`data/deck.v1.json` works normally in any editor that writes through symlinks.
-If your editor replaces the file instead, the check will tell you, and
-`ln -sf ../Sources/ValuesCardSortKit/Resources/deck.v1.json data/deck.v1.json`
-restores it.
+| Attack | Caught by |
+|---|---|
+| Edit a card in `data/deck.v1.json` | both pinned hashes, **and** the regeneration check |
+| Edit a card in the generated Swift | the regeneration check, **and** the runtime payload hash |
+| Edit both consistently | both pinned hashes (file + card payload) |
+| Patch the shipped binary | `DeckLoader.validate` at launch — the app refuses to run a sort |
 
-**This one is out of order and should be flagged as such.** The change shipped
-in F1 because the alternative was an app with no deck, but SPEC §4 currently
-names a path that is not where the bytes live. Either ratify it or tell me to
-restructure — it should not sit unratified indefinitely.
+The pinned payload hash is **hand-maintained in `DeckLoader.swift`, not emitted
+by the generator**, so altering a card and the constant guarding it cannot be
+one edit to one file. The same constant is pinned in four places: that file,
+`scripts/check_deck.py`, this document, and SPEC §4.
 
-One more hazard worth naming: the deck is stored in git as a symlink *blob*, so
-a C1 sign-off performed through GitHub's **web editor** at `data/deck.v1.json`
-would edit the link text rather than the deck. Do C1 in a local checkout.
+The gate also asserts there is no `deck.v*.json` anywhere outside `data/` — no
+stray copy that could become shippable.
 
-**SPEC edit:** §4 — one sentence noting the canonical path is a link to the
-package resource, and why.
+**The only way a value enters someone's deck at runtime is R4:** a card they
+write themselves, in the app.
+
+**Consequence for C1** (now in `fixtures/README.md`): after editing
+`instrument.verification`, run `./scripts/generate-deck.sh`, re-pin the new
+*file* hash, and confirm the *payload* hash is unchanged. Do it in a local
+checkout — the deck is no longer a symlink, but the regeneration step cannot be
+performed in GitHub's web editor.
+
+**SPEC edit:** §4 — "The app bundles and loads this exact JSON" becomes: the
+app compiles this JSON into its binary; the bundle ships no deck resource. Add
+the payload hash and the four-lock description.
 
 -----
 August 14, 2026

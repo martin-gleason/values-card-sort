@@ -10,7 +10,7 @@ Sort 83 value cards into five piles, keep your 5–10 most important, rank them,
 
 ```
 brew install xcodegen        # build-time only; nothing links into the app
-./scripts/bootstrap.sh       # generates ValuesCardSort.xcodeproj (gitignored)
+./scripts/bootstrap.sh       # compiles the deck + generates the Xcode project (gitignored)
 swift test                   # deck fidelity + phase-rule tests, no simulator needed
 ```
 

@@ -7,7 +7,7 @@ import Foundation
 /// The `id` is the card's 1-based position in the deck as published, not an
 /// arbitrary key — it is how a card is cited back to the source document, so
 /// it is stable for the life of a deck version (SPEC §4).
-public struct ValueCard: Codable, Hashable, Sendable, Identifiable {
+public struct ValueCard: Hashable, Sendable, Identifiable {
     /// 1…83, contiguous, matching the printed instrument's numbering.
     public let id: Int
     /// The value name as printed: uppercase, e.g. `"SELF-KNOWLEDGE"`.
@@ -24,7 +24,20 @@ public struct ValueCard: Codable, Hashable, Sendable, Identifiable {
 
 /// The instrument's provenance, carried in the deck file so attribution
 /// travels with the data rather than being retyped in the UI (SPEC §2, §8).
-public struct Instrument: Codable, Hashable, Sendable {
+public struct Instrument: Hashable, Sendable {
+    public init(
+        title: String, authors: String, institution: String, year: Int,
+        copyright: String, sources: [String], verification: String
+    ) {
+        self.title = title
+        self.authors = authors
+        self.institution = institution
+        self.year = year
+        self.copyright = copyright
+        self.sources = sources
+        self.verification = verification
+    }
+
     public let title: String
     public let authors: String
     public let institution: String
@@ -36,33 +49,36 @@ public struct Instrument: Codable, Hashable, Sendable {
 }
 
 /// A versioned deck: the instrument's provenance plus its cards.
-public struct Deck: Codable, Hashable, Sendable {
+///
+/// Deliberately **not** `Codable`. The deck is compiled into the binary from
+/// `data/deck.v1.json` (see `scripts/generate_deck.py`), so there is no JSON
+/// resource in the shipped app to parse — and therefore none to swap. Adding a
+/// decoder here would put that editing surface back.
+public struct Deck: Hashable, Sendable {
     public let deckVersion: String
     public let instrument: Instrument
     /// Redundant with `cards.count` on purpose — see ``DeckLoader``.
     public let cardCount: Int
     public let cards: [ValueCard]
 
-    /// Built once at decode time. Export (R8) and the sort screen look cards up
-    /// by id constantly; a linear scan per lookup would be quietly quadratic.
-    /// Derived state, so it is excluded from `Codable`, `Hashable`, and `==`.
+    /// Built once at construction. Export (R8) and the sort screen look cards
+    /// up by id constantly; a linear scan per lookup would be quietly
+    /// quadratic. Derived state, so it is excluded from `Hashable` and `==`.
     private let index: [Int: ValueCard]
 
-    private enum CodingKeys: String, CodingKey {
-        case deckVersion, instrument, cardCount, cards
-        // `$schema` is present in the file for editor tooling. It is not
-        // modelled here; decoding ignores unknown keys.
-    }
-
-    public init(from decoder: any Decoder) throws {
-        let c = try decoder.container(keyedBy: CodingKeys.self)
-        self.deckVersion = try c.decode(String.self, forKey: .deckVersion)
-        self.instrument = try c.decode(Instrument.self, forKey: .instrument)
-        self.cardCount = try c.decode(Int.self, forKey: .cardCount)
-        self.cards = try c.decode([ValueCard].self, forKey: .cards)
+    public init(
+        deckVersion: String,
+        instrument: Instrument,
+        cardCount: Int,
+        cards: [ValueCard]
+    ) {
+        self.deckVersion = deckVersion
+        self.instrument = instrument
+        self.cardCount = cardCount
+        self.cards = cards
         // Non-trapping: a duplicate id must surface as a thrown
         // `DeckError.duplicateIDs` from `DeckLoader.validate`, not as a crash
-        // inside `init(from:)` before validation ever gets to run.
+        // here, before validation ever gets to run.
         self.index = Dictionary(cards.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
     }
 

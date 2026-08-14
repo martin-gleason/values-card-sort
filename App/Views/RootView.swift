@@ -204,6 +204,6 @@ struct StoreUnavailableView: View {
 }
 
 #Preview("Deck missing") {
-    RootView(deckResult: .failure(DeckError.resourceMissing))
+    RootView(deckResult: .failure(DeckError.countMismatch(declared: 83, actual: 0)))
         .modelContainer(for: SessionRecord.self, inMemory: true)
 }

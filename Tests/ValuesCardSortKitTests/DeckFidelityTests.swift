@@ -5,18 +5,21 @@ import Testing
 
 @testable import ValuesCardSortKit
 
-/// TESTING.md layer 1, asserted against the resource the app actually loads.
+/// TESTING.md layer 1, asserted against the deck the app actually ships.
 ///
-/// `scripts/check-deck.sh` asserts the same facts about the file on disk. Both
-/// exist because they catch different failures: the script catches a bad file,
-/// these catch a good file that never made it into the bundle.
+/// The deck is compiled in (see `scripts/generate_deck.py`), so these run
+/// against the same constants the binary carries. `scripts/check-deck.sh`
+/// asserts the same facts about `data/deck.v1.json` and that the generated
+/// Swift still matches it. Both exist because they catch different failures:
+/// the script catches a drifted source tree, these catch a deck that is wrong
+/// as compiled.
 @Suite("Deck fidelity (SPEC §4)")
 struct DeckFidelityTests {
     private func loadedDeck() throws -> Deck {
         try DeckLoader.load()
     }
 
-    @Test("deck.v1.json is present in the bundle and parses")
+    @Test("the compiled deck loads and validates")
     func deckLoads() throws {
         let deck = try loadedDeck()
         #expect(deck.deckVersion == "1.0.0")
@@ -92,49 +95,75 @@ struct DeckFidelityTests {
         let deck = try loadedDeck()
         #expect(deck[1] == ValueCard(id: 1, name: "ACCEPTANCE", descriptor: "to be accepted as I am"))
         #expect(deck[83] == ValueCard(id: 83, name: "WORLD PEACE", descriptor: "to work to promote peace in the world"))
-        #expect(deck[33]?.name == "GOD'S WILL", "apostrophes must survive JSON decoding")
-        #expect(deck[54]?.name == "NON-CONFORMITY", "hyphens must survive JSON decoding")
+        #expect(deck[33]?.name == "GOD'S WILL", "apostrophes must survive code generation")
+        #expect(deck[54]?.name == "NON-CONFORMITY", "hyphens must survive code generation")
     }
 
     // MARK: - The validator must actually reject bad decks
+    //
+    // Built directly rather than by round-tripping JSON: the deck is no longer
+    // decoded from a file, so a JSON-based tamper test would be exercising a
+    // path the app does not have.
+
+    private func tampered(_ change: (inout [ValueCard]) -> Void) throws -> Deck {
+        let deck = try loadedDeck()
+        var cards = deck.cards
+        change(&cards)
+        return Deck(
+            deckVersion: deck.deckVersion,
+            instrument: deck.instrument,
+            cardCount: deck.cardCount,
+            cards: cards
+        )
+    }
 
     @Test("a deck whose cardCount disagrees with its cards is rejected")
     func rejectsCountMismatch() throws {
         let deck = try loadedDeck()
-        let tampered = try mutate(deck) { $0["cardCount"] = 82 }
+        let short = Deck(
+            deckVersion: deck.deckVersion,
+            instrument: deck.instrument,
+            cardCount: 82,
+            cards: deck.cards
+        )
         #expect(throws: DeckError.countMismatch(declared: 82, actual: 83)) {
-            try DeckLoader.decode(tampered)
+            try DeckLoader.validated(short)
         }
     }
 
     @Test("a deck with a drifted card is rejected")
     func rejectsCardDrift() throws {
-        let deck = try loadedDeck()
-        let tampered = try mutate(deck) { json in
-            var cards = json["cards"] as! [[String: Any]]
-            cards[4]["descriptor"] = "to be physically ATTRACTIVE"
-            json["cards"] = cards
+        let drifted = try tampered { cards in
+            cards[4] = ValueCard(id: 5, name: cards[4].name, descriptor: "to be physically ATTRACTIVE")
         }
-        #expect(throws: DeckError.self) { try DeckLoader.decode(tampered) }
+        #expect(throws: DeckError.self) { try DeckLoader.validated(drifted) }
+    }
+
+    @Test("a deck with a drifted NAME is rejected")
+    func rejectsNameDrift() throws {
+        let drifted = try tampered { cards in
+            cards[0] = ValueCard(id: 1, name: "ACCEPTANCE ", descriptor: cards[0].descriptor)
+        }
+        #expect(throws: DeckError.self) { try DeckLoader.validated(drifted) }
     }
 
     @Test("a deck with non-contiguous ids is rejected")
     func rejectsNonContiguousIDs() throws {
-        let deck = try loadedDeck()
-        let tampered = try mutate(deck) { json in
-            var cards = json["cards"] as! [[String: Any]]
-            cards[10]["id"] = 999
-            json["cards"] = cards
+        let drifted = try tampered { cards in
+            cards[10] = ValueCard(id: 999, name: cards[10].name, descriptor: cards[10].descriptor)
         }
-        #expect(throws: DeckError.self) { try DeckLoader.decode(tampered) }
+        #expect(throws: DeckError.self) { try DeckLoader.validated(drifted) }
     }
 
-    /// Round-trips the real deck through JSON so a test can perturb one field
-    /// without a second copy of the deck existing anywhere in the repo.
-    private func mutate(_ deck: Deck, _ change: (inout [String: Any]) -> Void) throws -> Data {
-        let data = try JSONEncoder().encode(deck)
-        var json = try JSONSerialization.jsonObject(with: data) as! [String: Any]
-        change(&json)
-        return try JSONSerialization.data(withJSONObject: json)
+    @Test("a deck with a duplicated card is rejected")
+    func rejectsDuplicateIDs() throws {
+        let drifted = try tampered { cards in cards[10] = cards[9] }
+        #expect(throws: DeckError.self) { try DeckLoader.validated(drifted) }
+    }
+
+    @Test("a deck missing a card is rejected")
+    func rejectsMissingCard() throws {
+        let drifted = try tampered { cards in cards.removeLast() }
+        #expect(throws: DeckError.self) { try DeckLoader.validated(drifted) }
     }
 }
