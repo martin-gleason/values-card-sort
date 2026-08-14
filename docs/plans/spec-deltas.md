@@ -104,58 +104,90 @@ formatting is locale-aware and the golden test pins a locale.
 
 ---
 
-## D5 — TESTING.md layer 4: make the accessibility gate a check · **Proposed**
+## D5 — the accessibility gate has no exemptions · **Ratified 2026-08-14**
 
-Layer 4 currently reads: *"Accessibility gate evidence (per feature, before
+TESTING.md layer 4 read: *"Accessibility gate evidence (per feature, before
 'done') — largest-Dynamic-Type screenshots both appearances; VoiceOver label
-audit of the screen's controls; documented in the PR."*
+audit of the screen's controls; documented in the PR."* Every other layer is
+executable; this one — covering the requirement SPEC §6 calls a **gate** — was
+a promise.
 
-Every other layer is executable. This one is a promise, and it is the layer
-covering the requirement SPEC §6 calls a **gate**.
+**Ratified:** layer 4 becomes XCUITest `performAccessibilityAudit()` on every
+screen, at default *and* `AccessibilityXXXL` content sizes, with **no
+exemptions of any kind**. Screenshots remain as evidence, not as the check.
+Every audit rule runs everywhere; an issue is fixed in the view, never waived
+in the test. The waiver machinery an earlier draft proposed has been deleted
+rather than narrowed.
 
-**Proposal.** Layer 4 becomes XCUITest `performAccessibilityAudit()` on every
-screen, at default *and* `AccessibilityXXXL` content sizes, plus the existing
-screenshots as evidence rather than as the check.
+**What this cost, and it is not nothing — see D7.**
 
-This already earned its place in F1: the audit caught a real clipping bug — the
-start button's icon left too little room for its label at accessibility sizes —
-that no one would have noticed reading the code.
+**What it bought,** all of which are real defects the gate forced out:
 
-**Two documented exemptions, both narrow, both on stock chrome:**
+1. A clipped button label at accessibility sizes (the icon took width the text
+   needed).
+2. White-on-accent button text at **4.02:1**, under §6's 4.5:1 floor — the
+   system blue does not meet the contrast bar this spec sets. Fixed with an
+   `AccentColor` asset: **6.39:1** light, **5.17:1** dark, ratios computed
+   rather than eyeballed.
+3. Contrast flags that were genuinely unanswerable rather than wrong: the audit
+   cannot resolve a ratio behind translucent material, and opaque row
+   backgrounds made the real ratio computable.
 
-- **`.contrast`** — the audit reports "nearly passed" for every text element on
-  the root screen, including a semibold primary label on the system grouped
-  background at roughly 15:1. It is reporting low confidence behind translucent
-  system materials, not a real failure. All flagged elements are stock SwiftUI,
-  which SPEC §3.1 deliberately makes Apple's ("the chrome is Apple's; we write
-  none of it").
-- **`.dynamicType`** — "partially unsupported" on four plain `Text` views using
-  stock text styles, at the *default* size. Checked rather than assumed:
-  re-running the audit at `AccessibilityXXXL` with those views scrolled into
-  view leaves all four unflagged, and exactly one issue survives, on an element
-  with no label and no identifier that the app did not author.
+**TESTING.md edit:** rewrite layer 4 as above; state that there are no
+exemptions.
 
-  Adversarial review then caught that the blanket exemption was being carried
-  into the largest-size tests too, where by that very argument it was not
-  needed — which would have switched the check off at exactly the size SPEC §6
-  names. Those runs are now scoped by **element ownership** instead: at
-  `AccessibilityXXXL`, `.dynamicType` is waived only for elements with no
-  identifier and no label, so it still fails on any view the app actually
-  wrote. Waived issues are printed on every run rather than silently dropped.
+---
 
-**`.textClipped` is never exempted** — it is the check that found the real bug.
+## D7 — SwiftUI `List` cannot pass a strict accessibility audit · **Needs a decision**
 
-**The exemptions must not spread.** SPEC §6's contrast requirement bites hardest
-on the themed card face, where the colours are ours. F8 runs the contrast audit
-on themed surfaces with **no** exemption, plus the computed contrast table §6
-already demands from the design session.
+**This is the cost of D5, and it collides with SPEC §3.1.**
 
-**Needs a decision from Marty:** the exemptions are a judgment call on a gate,
-which is exactly the kind of thing that should not be made silently. If you'd
-rather the audit run fully strict and simply fail on stock chrome, say so and
-the tests flip.
+§3.1 says "navigation, **lists**, sheets, pickers, share: stock SwiftUI. The
+chrome is Apple's; we write none of it." With `List`, the F1 root screen
+produced **six** audit issues under D5's no-exemption rule:
 
-**TESTING.md edit:** rewrite layer 4; note the exemptions and their scope.
+- `Dynamic Type: partially unsupported` on four plain `Text` rows that use
+  stock text styles and demonstrably do scale correctly (the largest-size
+  screenshots show them wrapping perfectly).
+- `Contrast nearly passed` on the two `Section` headers, which are the
+  system's own grey.
+
+Every remedy was tried and measured, not assumed: explicit `.font` text styles,
+explicit `.foregroundStyle(.primary)`, `.fixedSize(horizontal:vertical:)`,
+`.listStyle(.plain)` and inset-grouped, `.listRowBackground` with opaque
+colours, wrapping row content in a `VStack`, collapsing rows into single
+explicit accessibility elements, and scrolling every row fully into view. **The
+count never went below six.** The identical content in a `ScrollView` audits
+clean. The flags live in `List`'s backing store, not in the content.
+
+**What shipped for F1:** `App/Views/GroupedSurface.swift`, a hand-built
+inset-grouped surface using the system's own grouped-background colours, the
+system corner radius, and Dynamic Type styles throughout. It is visually the
+platform's grouped list — nothing themed, nothing invented, no design boldness,
+so §3.1's *intent* holds even though its letter does not. Screenshots in
+`docs/evidence/f1/`.
+
+**Why this needs your decision anyway:**
+
+- It is a literal departure from a ratified spec sentence, made to satisfy a
+  ratified gate. One of the two has to give, and that is your call, not mine.
+- **F6 is where it really bites.** The session history is genuinely a list and
+  wants swipe-to-delete, which `List` provides and a `ScrollView` does not. At
+  F6 the choice is: stock `List` with a failing audit, `List` with the first
+  exemption, or hand-built rows plus hand-built delete affordances.
+
+**Options:**
+
+1. **Amend §3.1** to say stock components *except where they fail the §6 gate*,
+   and keep building on `GroupedSection`. Consistent with D5 as ratified.
+2. **Keep §3.1 literal** and reinstate a documented `List`-only exemption,
+   which reopens D5.
+3. **Split the difference:** stock `List` wherever it audits clean, hand-built
+   only where it does not, deciding case by case at each gate.
+
+My recommendation is **(1)**: you ratified the accessibility gate as absolute,
+and this is what absolute costs. But it should be ratified explicitly rather
+than absorbed silently.
 
 ---
 

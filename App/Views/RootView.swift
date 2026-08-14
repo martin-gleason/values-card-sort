@@ -11,18 +11,21 @@ import ValuesCardSortKit
 /// (R10). The sort screen itself is F2 — the placeholder below is a deliberate
 /// boundary, not an unfinished feature.
 ///
-/// Chrome is stock SwiftUI throughout, per SPEC §3.1: all design boldness is
-/// reserved for the card face and desk surface, which F8 owns.
+/// Layout uses ``GroupedSection`` rather than `List`. That is an accessibility
+/// requirement, not a design choice — see the reasoning in
+/// `GroupedSurface.swift`. Every colour here is a system colour and every text
+/// style is a Dynamic Type style; no design boldness lives in this screen, per
+/// SPEC §3.1.
 ///
-/// Two layout rules here exist because `performAccessibilityAudit()` caught
-/// their absence (SPEC §6):
+/// Three rules learned from `performAccessibilityAudit()`, all of which cost
+/// nothing and are worth keeping as the app grows (SPEC §6):
 ///
-/// - **No side-by-side label/value rows.** `LabeledContent` puts a label and a
-///   value on one line, and at the largest accessibility size the value is
-///   truncated rather than wrapped. Every row stacks vertically instead.
-/// - **No small secondary text.** Tertiary and secondary foreground styles at
-///   footnote size sit near the contrast floor. Emphasis comes from size and
-///   weight, which cost no contrast.
+/// - **No side-by-side label/value rows.** They truncate rather than wrap at
+///   accessibility sizes.
+/// - **No small secondary-coloured text.** Emphasis comes from size and weight,
+///   which cost no contrast.
+/// - **No icon beside a long label at accessibility sizes.** The icon's width
+///   is width the text needs, and the label clips.
 struct RootView: View {
     let deckResult: Result<Deck, any Error>
 
@@ -57,43 +60,41 @@ struct RootView: View {
         }
     }
 
-    @ViewBuilder
     private func content(deck: Deck) -> some View {
-        List {
-            Section("Your sort") {
-                if let record = inProgress {
-                    resumeRow(record: record)
-                } else {
-                    startRow(deck: deck)
-                }
-            }
-
-            if !completedRecords.isEmpty {
-                Section("Past sorts") {
-                    ForEach(completedRecords) { record in
-                        Text(
-                            record.completedAt ?? record.startedAt,
-                            format: .dateTime.year().month(.wide).day()
-                        )
-                        .accessibilityLabel("Completed sort")
+        ScrollView {
+            VStack(alignment: .leading, spacing: 28) {
+                GroupedSection("Your sort") {
+                    if let record = inProgress {
+                        resumeRow(record: record)
+                    } else {
+                        startRow(deck: deck)
                     }
                 }
-            }
 
-            Section("Instrument") {
-                Text("\(deck.cards.count) value cards")
-                    .accessibilityIdentifier("deck-card-count")
-                Text("Deck version \(deck.deckVersion)")
+                if !completedRecords.isEmpty {
+                    GroupedSection("Past sorts") {
+                        ForEach(completedRecords) { record in
+                            Text(
+                                record.completedAt ?? record.startedAt,
+                                format: .dateTime.year().month(.wide).day()
+                            )
+                            .accessibilityLabel("Completed sort")
+                        }
+                    }
+                }
 
-                VStack(alignment: .leading, spacing: 4) {
+                GroupedSection("Instrument") {
+                    Text("\(deck.cards.count) value cards")
+                        .accessibilityIdentifier("deck-card-count")
+                    Text("Deck version \(deck.deckVersion)")
                     Text(deck.instrument.title)
                         .fontWeight(.semibold)
                     Text("\(deck.instrument.authors) · \(deck.instrument.institution), \(String(deck.instrument.year)) · \(deck.instrument.copyright)")
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .accessibilityElement(children: .combine)
             }
+            .padding(.vertical, 20)
         }
+        .background(Color.groupedBackground)
         .accessibilityIdentifier("root-list")
         .alert("Could not start", isPresented: .constant(startError != nil)) {
             Button("OK") { startError = nil }
@@ -103,14 +104,10 @@ struct RootView: View {
     }
 
     private func startRow(deck: Deck) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 12) {
             Button {
                 start(deck: deck)
             } label: {
-                // At accessibility sizes the icon's width is width the text
-                // needs, and the label clips — caught by the Dynamic Type
-                // audit, not by eye. Apple's own guidance is to drop the
-                // symbol at these sizes.
                 Group {
                     if dynamicTypeSize.isAccessibilitySize {
                         Text("Start a new sort")
@@ -118,15 +115,16 @@ struct RootView: View {
                         Label("Start a new sort", systemImage: "rectangle.stack")
                     }
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .fontWeight(.semibold)
+                .frame(maxWidth: .infinity)
             }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
             .accessibilityIdentifier("start-sort")
             .accessibilityHint("Shuffles the deck and begins sorting \(deck.cards.count) cards.")
 
             Text("Sort \(deck.cards.count) value cards into five piles, keep your 5 to 10 most important, then rank them. Everything stays on this device.")
-                .font(.subheadline)
         }
-        .padding(.vertical, 4)
     }
 
     private func resumeRow(record: SessionRecord) -> some View {
@@ -140,15 +138,12 @@ struct RootView: View {
                 // merely the fact that a session exists.
                 Text("\(state.sortedCount) of \(state.totalCards) cards sorted")
                 Text("Phase \(state.phase.stepNumber) of \(SessionPhase.stepCount)")
-                    .font(.subheadline)
             }
 
             // F2 replaces this with the sort screen.
             Text("The sort screen arrives in F2.")
-                .font(.subheadline)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.vertical, 4)
         .accessibilityElement(children: .combine)
         .accessibilityIdentifier("resume-sort")
     }
@@ -163,16 +158,17 @@ struct RootView: View {
     }
 }
 
-/// Shown when the bundled instrument is missing or has drifted (SPEC §4).
+/// Shown when the compiled instrument fails validation (SPEC §4).
 ///
-/// A dedicated screen rather than an alert: without a faithful deck this app
-/// has nothing to offer, and saying so plainly is better than degrading.
+/// A dedicated screen rather than an alert: without a deck it can vouch for,
+/// this app has nothing to offer, and saying so plainly is better than
+/// degrading quietly.
 struct DeckUnavailableView: View {
     let error: any Error
 
     var body: some View {
         ContentUnavailableView {
-            Label("The deck could not be loaded", systemImage: "exclamationmark.triangle")
+            Label("The deck could not be verified", systemImage: "exclamationmark.triangle")
         } description: {
             Text("This app will not run a sort against a deck it cannot verify against the printed instrument.\n\n\(String(describing: error))")
         }
@@ -183,8 +179,7 @@ struct DeckUnavailableView: View {
 /// Shown when the local session store will not open.
 ///
 /// The alternative was `fatalError`, i.e. crash-on-launch with no path out for
-/// someone whose store got corrupted. Flagged in adversarial review as
-/// inconsistent with the care taken over `DeckUnavailableView` a few lines away.
+/// someone whose store got corrupted.
 struct StoreUnavailableView: View {
     let error: any Error
 
@@ -203,7 +198,7 @@ struct StoreUnavailableView: View {
         .modelContainer(for: SessionRecord.self, inMemory: true)
 }
 
-#Preview("Deck missing") {
+#Preview("Deck unavailable") {
     RootView(deckResult: .failure(DeckError.countMismatch(declared: 83, actual: 0)))
         .modelContainer(for: SessionRecord.self, inMemory: true)
 }

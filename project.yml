@@ -82,6 +82,7 @@ targets:
         CODE_SIGN_STYLE: Automatic
         # Chore C2 supplies the team; unsigned local builds work without it.
         DEVELOPMENT_TEAM: ""
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ENABLE_PREVIEWS: YES
 
