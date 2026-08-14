@@ -1,62 +1,35 @@
-# Xcode
-#
-# gitignore contributors: remember to update Global/Xcode.gitignore, Objective-C.gitignore & Swift.gitignore
-
-## User settings
-xcuserdata/
-
-## Obj-C/Swift specific
-*.hmap
-
-## App packaging
-*.ipa
-*.dSYM.zip
-*.dSYM
-
-## Playgrounds
-timeline.xctimeline
-playground.xcworkspace
+# macOS
+.DS_Store
 
 # Swift Package Manager
-#
-# Add this line if you want to avoid checking in source code from Swift Package Manager dependencies.
-# Packages/
-# Package.pins
-# Package.resolved
-# *.xcodeproj
-#
-# Xcode automatically generates this directory with a .xcworkspacedata file and xcuserdata
-# hence it is not needed unless you have added a package configuration file to your project
-# .swiftpm
-
 .build/
+.swiftpm/
+Package.resolved
 
-# CocoaPods
-#
-# We recommend against adding the Pods directory to your .gitignore. However
-# you should judge for yourself, the pros and cons are mentioned at:
-# https://guides.cocoapods.org/using/using-cocoapods.html#should-i-check-the-pods-directory-into-source-control
-#
-# Pods/
-#
-# Add this line if you want to avoid checking in source code from the Xcode workspace
-# *.xcworkspace
+# Xcode — the project is GENERATED from project.yml by scripts/bootstrap.sh.
+# Never commit it; edit project.yml instead.
+*.xcodeproj/
+*.xcworkspace/
+DerivedData/
+xcuserdata/
+*.xcuserstate
 
-# Carthage
-#
-# Add this line if you want to avoid checking in source code from Carthage dependencies.
-# Carthage/Checkouts
+# Xcode build by-products
+*.hmap
+*.ipa
+*.dSYM
+*.dSYM.zip
+timeline.xctimeline
 
-Carthage/Build/
+# Python
+__pycache__/
+*.pyc
 
-# fastlane
-#
-# It is recommended to not store the screenshots in the git repo.
-# Instead, use fastlane to re-generate the screenshots whenever they are needed.
-# For more information about the recommended setup visit:
-# https://docs.fastlane.tools/best-practices/source-control/#source-control
+# Fixtures are instrument source PDFs downloaded by the maintainer (chore C1).
+# They are public-domain documents, not repo artifacts.
+fixtures/*.pdf
 
-fastlane/report.xml
-fastlane/Preview.html
-fastlane/screenshots/**/*.png
-fastlane/test_output
+# Local-only working docs. These carry the maintainer's personal context and
+# are deliberately kept out of the public history.
+CLAUDE.local.md
+docs/decisions.md
