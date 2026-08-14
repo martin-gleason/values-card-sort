@@ -1,0 +1,92 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# The enforcement surface (docs/conventions.md).
+#
+# "Rules an agent can drift past belong in deterministic checks, not prose."
+# Every job here corresponds to a layer in docs/TESTING.md. Branch protection
+# on main requires all of them green plus a review (chore C3).
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # TESTING.md layers 1 and 5. No Xcode, no Swift, no dependencies — this job
+  # is nearly free, so the contract is gated on every push regardless of cost.
+  contract:
+    name: Contract (deck · privacy · SPDX)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deck fidelity (SPEC §4)
+        run: ./scripts/check-deck.sh
+      - name: Privacy (SPEC §7)
+        run: ./scripts/check-privacy.sh
+      - name: SPDX headers (SPEC §8)
+        run: ./scripts/check-spdx.sh
+
+  # TESTING.md layer 2. The rule layer is a plain SPM package with no SwiftData
+  # and no SwiftUI, so R1–R8 are testable without building an app.
+  package:
+    name: Rule tests (swift test)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Show toolchain
+        run: swift --version
+      - name: Run rule and fidelity tests
+        run: swift test
+
+  # The app itself, on both shipping platforms. Also TESTING.md layer 4: the
+  # accessibility audit runs here as a test, not as a promise in a PR body.
+  app:
+    name: App build + tests (${{ matrix.platform }})
+    runs-on: macos-15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: iOS
+            destination: 'platform=iOS Simulator,name=iPhone 16,OS=latest'
+            # Unit tests AND the SPEC §6 accessibility gate.
+            extra: ''
+          - platform: macOS
+            destination: 'platform=macOS'
+            # Unit tests only. macOS XCUITest requires a real signing identity:
+            # the test runner app and the .xctest bundle must share a Team ID,
+            # so ad-hoc signing fails to load the bundle and unsigned builds
+            # are refused outright. That needs chore C2 (Apple Developer
+            # Program). The macOS app is still built and its unit tests still
+            # run here; the accessibility gate runs on iOS, where the same
+            # SwiftUI views are audited.
+            # TODO(C2): drop this skip once a team is available.
+            extra: '-skip-testing:ValuesCardSortUITests'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Generate project
+        run: ./scripts/bootstrap.sh
+      - name: Test
+        run: |
+          xcodebuild test \
+            -scheme ValuesCardSort \
+            -destination '${{ matrix.destination }}' \
+            -resultBundlePath "TestResults-${{ matrix.platform }}.xcresult" \
+            ${{ matrix.extra }} \
+            CODE_SIGNING_ALLOWED=NO
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.platform }}
+          path: TestResults-${{ matrix.platform }}.xcresult
+          if-no-files-found: ignore
