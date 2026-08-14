@@ -151,7 +151,7 @@ the tests flip.
 
 ---
 
-## D6 — deck file location · **Proposed (housekeeping)**
+## D6 — deck file location · **Proposed — but already shipped**
 
 The real deck bytes now live at
 `Sources/ValuesCardSortKit/Resources/deck.v1.json`, and **`data/deck.v1.json`
@@ -173,6 +173,15 @@ symlink with a copy during C1.
 If your editor replaces the file instead, the check will tell you, and
 `ln -sf ../Sources/ValuesCardSortKit/Resources/deck.v1.json data/deck.v1.json`
 restores it.
+
+**This one is out of order and should be flagged as such.** The change shipped
+in F1 because the alternative was an app with no deck, but SPEC §4 currently
+names a path that is not where the bytes live. Either ratify it or tell me to
+restructure — it should not sit unratified indefinitely.
+
+One more hazard worth naming: the deck is stored in git as a symlink *blob*, so
+a C1 sign-off performed through GitHub's **web editor** at `data/deck.v1.json`
+would edit the link text rather than the deck. Do C1 in a local checkout.
 
 **SPEC edit:** §4 — one sentence noting the canonical path is a link to the
 package resource, and why.

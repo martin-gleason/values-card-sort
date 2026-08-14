@@ -24,8 +24,8 @@ So the harness was built first, then F1 on top of it.
 |---|---|
 | `data/deck.schema.json` | the deck contract's shape; fixes the dangling `$schema` |
 | `scripts/check-deck.sh` | SPEC §4 — schema, counts, contiguity, uniqueness, two hashes, resource parity |
-| `scripts/check-privacy.sh` | SPEC §7 — zero networking APIs, no network entitlement |
-| `scripts/check-spdx.sh` | SPEC §8 — licence header on every Swift file |
+| `scripts/check-privacy.sh` | SPEC §7 — zero networking APIs, no network entitlement (own lexer tests in `scripts/test_check_privacy.py`) |
+| `scripts/check-spdx.sh` | SPEC §8 — licence header on every source file |
 | `scripts/bootstrap.sh` | generates the Xcode project from `project.yml` |
 | `.github/workflows/ci.yml` | all of the above plus both test suites, per PR |
 | `.claude/agents/adversarial-reviewer.md` | the reviewer CLAUDE.md promises |
@@ -45,21 +45,24 @@ exists to catch, because a gate that cannot fail is decoration.
   state) and `SessionStore` (at-most-one-in-progress, start/resume/complete/
   abandon). A stock-chrome shell that loads the deck, starts a sort, and shows
   a resumed session's exact position.
-- **Tests** — 28 package tests, 8 app tests, 6 UI tests.
+- **Tests** — 28 package tests, 11 app tests, 6 UI tests, 27 privacy-lexer tests.
 
 ## Verification
 
 All commands run, all output shown in the F1 PR.
 
+Numbers below are post-review-fix.
+
 | Command | Result |
 |---|---|
+| `python3 scripts/test_check_privacy.py` | 27 lexer checks pass |
 | `scripts/check-deck.sh` | 8 checks pass |
-| `scripts/check-privacy.sh` | 16 Swift files, 1 entitlements file, clean |
-| `scripts/check-spdx.sh` | 17 of 17 files carry the header |
+| `scripts/check-privacy.sh` | 16 Swift files + 2 entitlement sources, clean, 1 declared exemption |
+| `scripts/check-spdx.sh` | 26 of 26 source files carry the header |
 | `swift test` | 28 tests, 4 suites, pass |
 | `xcodebuild build` iOS Simulator + macOS | succeeded |
-| `xcodebuild test` iOS Simulator | 8 unit + 6 UI, pass |
-| `xcodebuild test` macOS | 8 unit, pass (UI blocked — see below) |
+| `xcodebuild test` iOS Simulator | 11 unit + 6 UI, pass |
+| `xcodebuild test` macOS | 11 unit, pass (UI blocked — see below) |
 
 ## What the gates caught
 
