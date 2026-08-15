@@ -22,7 +22,7 @@ jobs:
   # TESTING.md layers 1 and 5. No Xcode, no Swift, no dependencies — this job
   # is nearly free, so the contract is gated on every push regardless of cost.
   contract:
-    name: Contract (deck · privacy · SPDX)
+    name: Contract (deck · privacy · SPDX · departures)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -36,6 +36,8 @@ jobs:
         run: ./scripts/check-privacy.sh
       - name: SPDX headers (SPEC §8)
         run: ./scripts/check-spdx.sh
+      - name: Component departures documented (SPEC §3.1 D7)
+        run: ./scripts/check-departures.sh
 
   # TESTING.md layer 2. The rule layer is a plain SPM package with no SwiftData
   # and no SwiftUI, so R1–R8 are testable without building an app.

@@ -54,12 +54,18 @@ These are contract, not preference. A PR that breaks one will not merge.
   This is deliberate hardening, not ceremony. The app puts text in front of
   people at hard moments, and a card altered to something cruel would be easy
   to miss in a large diff.
-- **Accessibility is a gate, not a feature (SPEC §6).** No screen is done until
-  it passes at the largest Dynamic Type size with VoiceOver, 44pt targets, and
-  Reduce Motion honored. `Tests/ValuesCardSortUITests` runs the audit.
+- **Accessibility is a gate, not a feature, and it has no exemptions (SPEC §6).**
+  No screen is done until it passes at the largest Dynamic Type size with
+  VoiceOver, 44pt targets, and Reduce Motion honored.
+  `Tests/ValuesCardSortUITests` runs `performAccessibilityAudit()` at default
+  and largest content sizes. When it fails, **fix the view** — there is no
+  waiver, and PRs adding one will not merge.
 - **System-components-first (SPEC §3.1).** Stock SwiftUI chrome everywhere. All
   design boldness lives on the card face and desk surface. Themes never touch
-  chrome.
+  chrome. The one exception is a component that fails the §6 audit: replace it
+  with a system-coloured, design-neutral equivalent and record the departure in
+  `docs/departures.md` — what failed, **what you tried first**, and screenshots.
+  `scripts/check-departures.sh` enforces the record.
 - **Verification, not assertion.** "It works" is not a claim; a pasted command
   and its output is. Show them in the PR.
 
@@ -81,6 +87,7 @@ python3 scripts/test_check_privacy.py   # the privacy gate's own lexer tests
 ./scripts/check-deck.sh          # deck fidelity + regeneration
 ./scripts/check-privacy.sh       # no networking APIs
 ./scripts/check-spdx.sh          # licence headers
+./scripts/check-departures.sh    # component departures documented + evidenced
 swift test                       # rules
 xcodebuild test -scheme ValuesCardSort -destination 'platform=iOS Simulator,name=iPhone 16'
 ```
