@@ -4,7 +4,7 @@ A free, open-source, native Apple app (iOS · iPadOS · macOS, one SwiftUI codeb
 
 Sort 83 value cards into five piles, keep your 5–10 most important, rank them, and export the result as markdown. Everything stays on your device: no accounts, no analytics, **no network connections at all**.
 
-**Status:** F1 (foundation) built; F2 (sort phase) next. `docs/SPEC.md` is version 1.0-draft — the contract the build follows, with the open items in §11 tracked in `docs/plans/spec-deltas.md` until Marty ratifies them. Feature work proceeds gate by gate. See `docs/SPEC.md` (the contract), `docs/TESTING.md` (the test plan), `docs/plans/` (working docs), `docs/decisions.md` (the log), and `CLAUDE.md` (the standing rules).
+**Status:** F1 (foundation) built; F2 (sort phase) next. `docs/SPEC.md` is version 1.0-draft — the contract the build follows, with the open items in §11 tracked in `docs/plans/spec-deltas.md` until Marty ratifies them. Feature work proceeds gate by gate. See `docs/SPEC.md` (the contract), `docs/TESTING.md` (the test plan), `docs/plans/` (working docs), and `CLAUDE.md` (the standing rules).
 
 ## Building
 
