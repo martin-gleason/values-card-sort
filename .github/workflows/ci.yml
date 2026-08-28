@@ -1,0 +1,143 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# The enforcement surface (docs/conventions.md).
+#
+# "Rules an agent can drift past belong in deterministic checks, not prose."
+# Every job here corresponds to a layer in docs/TESTING.md. Branch protection
+# on main requires all of them green plus a review (chore C3).
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # TESTING.md layers 1 and 5. No Xcode, no Swift, no dependencies — this job
+  # is nearly free, so the contract is gated on every push regardless of cost.
+  contract:
+    name: Contract (deck · privacy · SPDX · departures)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Privacy gate self-test
+        # The gate's own lexer has tests, because an adversarial review showed
+        # one line of ordinary Swift could blind it for a whole file.
+        run: python3 scripts/test_check_privacy.py
+      - name: Deck fidelity (SPEC §4)
+        run: ./scripts/check-deck.sh
+      - name: Privacy (SPEC §7)
+        run: ./scripts/check-privacy.sh
+      - name: SPDX headers (SPEC §8)
+        run: ./scripts/check-spdx.sh
+      - name: Component departures documented (SPEC §3.1 D7)
+        run: ./scripts/check-departures.sh
+
+  # TESTING.md layer 2. The rule layer is a plain SPM package with no SwiftData
+  # and no SwiftUI, so R1–R8 are testable without building an app.
+  package:
+    name: Rule tests (swift test)
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select Xcode
+        # O1 ratifies the Xcode 26 SDK. A hard-coded /Applications/Xcode_26.app
+        # is a guess about the runner image's naming, and a wrong guess fails
+        # the whole job in 10s — so discover the newest Xcode present and assert
+        # the major version instead of assuming a path.
+        run: |
+          ls -d /Applications/Xcode*.app
+          newest="$(ls -d /Applications/Xcode*.app | sort -V | tail -1)"
+          sudo xcode-select -switch "$newest"
+          xcodebuild -version
+          major="$(xcodebuild -version | sed -n '1s/Xcode \([0-9][0-9]*\).*/\1/p')"
+          if [ "${major:-0}" -lt 26 ]; then
+            echo "::error::O1 requires the Xcode 26 SDK; newest on this runner is ${major:-none} ($newest)."
+            exit 1
+          fi
+      - name: Show toolchain
+        run: swift --version
+      - name: Compiled deck is up to date with data/deck.v1.json
+        run: python3 scripts/generate_deck.py --check
+      - name: Run rule and fidelity tests
+        run: swift test
+
+  # The app itself, on both shipping platforms. Also TESTING.md layer 4: the
+  # accessibility audit runs here as a test, not as a promise in a PR body.
+  app:
+    name: App build + tests (${{ matrix.platform }})
+    runs-on: macos-26
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: iOS
+            # Empty: resolved at runtime by scripts/pick_simulator.py, because
+            # neither a pinned model name nor the "Any iOS Simulator Device"
+            # placeholder survives a runner image change. This is the ONLY job
+            # that runs the SPEC §6 accessibility gate while macOS UI tests
+            # wait on C2, so it must not fail for cosmetic reasons.
+            destination: ''
+            # Unit tests AND the SPEC §6 accessibility gate.
+            extra: ''
+          - platform: macOS
+            destination: 'platform=macOS'
+            # Unit tests only. macOS XCUITest requires a real signing identity:
+            # the test runner app and the .xctest bundle must share a Team ID,
+            # so ad-hoc signing fails to load the bundle and unsigned builds
+            # are refused outright. That needs chore C2 (Apple Developer
+            # Program). The macOS app is still built and its unit tests still
+            # run here; the accessibility gate runs on iOS, where the same
+            # SwiftUI views are audited.
+            # TODO(C2): drop this skip once a team is available.
+            extra: '-skip-testing:ValuesCardSortUITests'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select Xcode
+        # O1 ratifies the Xcode 26 SDK. A hard-coded /Applications/Xcode_26.app
+        # is a guess about the runner image's naming, and a wrong guess fails
+        # the whole job in 10s — so discover the newest Xcode present and assert
+        # the major version instead of assuming a path.
+        run: |
+          ls -d /Applications/Xcode*.app
+          newest="$(ls -d /Applications/Xcode*.app | sort -V | tail -1)"
+          sudo xcode-select -switch "$newest"
+          xcodebuild -version
+          major="$(xcodebuild -version | sed -n '1s/Xcode \([0-9][0-9]*\).*/\1/p')"
+          if [ "${major:-0}" -lt 26 ]; then
+            echo "::error::O1 requires the Xcode 26 SDK; newest on this runner is ${major:-none} ($newest)."
+            exit 1
+          fi
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Generate project
+        run: ./scripts/bootstrap.sh
+      - name: Resolve destination
+        run: |
+          if [ -n '${{ matrix.destination }}' ]; then
+            echo "DEST=${{ matrix.destination }}" >> "$GITHUB_ENV"
+          else
+            echo "DEST=$(python3 scripts/pick_simulator.py)" >> "$GITHUB_ENV"
+          fi
+      - name: Test
+        run: |
+          echo "destination: $DEST"
+          xcodebuild test \
+            -scheme ValuesCardSort \
+            -destination "$DEST" \
+            -resultBundlePath "TestResults-${{ matrix.platform }}.xcresult" \
+            ${{ matrix.extra }} \
+            CODE_SIGNING_ALLOWED=NO
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.platform }}
+          path: TestResults-${{ matrix.platform }}.xcresult
+          if-no-files-found: ignore

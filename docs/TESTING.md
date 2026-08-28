@@ -11,7 +11,8 @@ The harness makes drift impossible: every pinned rule in SPEC §5.2 gets a named
    - One test (or group) per rule, named for it: `R1_shuffleIsCompletePermutation`, `R3_undoReturnsCardToFrontOfQueue`, `R5_cutCardsLandInVeryImportant`, `R6_cullGateRejectsUnder5AndOver10`, `R6_keptOrderIsSurvivorsThenPromotions`, `R8_exportMatchesGoldenFile`, `R10_midPhaseStateRoundTripsThroughPersistence`, etc.
    - R8 uses golden-file comparison: a fixture session → exact expected markdown.
 3. **Snapshot tests** (test target only, F8) — card face per theme × light/dark × default and largest Dynamic Type size.
-4. **Accessibility gate evidence** (per feature, before "done") — largest-Dynamic-Type screenshots both appearances; VoiceOver label audit of the screen's controls; documented in the PR.
+4. **Accessibility gate** (XCUITest, per screen) — `performAccessibilityAudit()` at the default content size *and* at `AccessibilityXXXL`, with **no exemptions of any kind** (D5, ratified 2026-08-14). Every audit rule runs on every screen; an issue is fixed in the view, never waived in the test. `assertAccessible` reports which element failed, so a failure is actionable rather than a suppression candidate.
+   Largest-Dynamic-Type screenshots in both appearances remain, in `docs/evidence/<feature>/` — as evidence, no longer as the check. Where the gate forces a departure from a stock component, that departure is recorded in `docs/departures.md` (SPEC §3.1).
 5. **Privacy check** (CI grep) — app target contains no `URLSession`/`Network`/socket imports. Deterministic, not advisory.
 
 ## Commands

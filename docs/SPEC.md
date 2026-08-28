@@ -1,6 +1,6 @@
 # Values Card Sort: Digital Tool — Specification
 
-**Version:** 1.0-draft (awaiting maintainer ratification)
+**Version:** 1.0 (deltas D1–D7 ratified 2026-08-14)
 **Maintainer:** Martin "Marty" Gleason
 **Status:** Contract. The agent may propose deltas; the maintainer ratifies them. The agent never edits this file on its own authority.
 
@@ -45,7 +45,7 @@ The About screen links to the source PDF and states that this is an adaptation w
 ## 3. Platforms and technology
 
 - **SwiftUI multiplatform, one codebase**, native targets: iOS, iPadOS, macOS. No Catalyst, no web view.
-- **Proposed minimums (ratify):** iOS/iPadOS 18, macOS 15. Built against the current SDK (Xcode 26 / iOS 26 family) so system chrome inherits the current design language on recompile.
+- **Minimums (ratified 2026-08-14, D1):** iOS/iPadOS 18, macOS 15. Built against the current SDK (Xcode 26 / iOS 26 family) so system chrome inherits the current design language on recompile.
 - **Persistence:** SwiftData, local store only. No CloudKit in 1.0 (door left open — no design decision may preclude adding CloudKit later without a rewrite).
 - **Tests:** Swift Testing for unit/rule tests; XCUITest reserved for the accessibility gate where needed.
 - **No third-party dependencies** in the app target unless ratified. (Snapshot-testing package permitted in the test target if F8 needs it.)
@@ -53,14 +53,20 @@ The About screen links to the source PDF and states that this is an adaptation w
 ### 3.1 Design stance (binding, from the mobile-design skill)
 
 - **System-components-first, content-flat.** Navigation, lists, sheets, pickers, share: stock SwiftUI. The chrome is Apple's; we write none of it.
+- **Exception, ratified 2026-08-14 (D7): except where a stock component fails the §6 accessibility gate.** §6 is absolute and admits no exemptions (D5), so where a stock component cannot pass the audit, it is replaced with a hand-built equivalent that uses the system's own colours, metrics and Dynamic Type styles — visually the platform's component, with no themed or invented design. Accessibility wins over component provenance; it never wins over the design stance, because the replacement carries no design of its own.
+  Every such departure is **flagged in `docs/departures.md`** with the audit rule that failed, what was tried, and light/dark screenshots at default and largest content sizes in `docs/evidence/`. A departure without that record is a defect.
+  Known departure: SwiftUI `List` (see `docs/departures.md` §1).
 - **The card face is the single signature element.** All design boldness — and all theming — lives on the card face and its desk surface. Themes never touch chrome, navigation, or system controls.
 - Semantic colors and Dynamic Type text styles everywhere outside the themed card face; even the card face must honor Dynamic Type scaling.
 
 ## 4. Data contract
 
 - `data/deck.v1.json` — the 83-card deck, extracted programmatically from the reference implementation (no hand transcription). SHA-256 of the file at extraction: `13a3db92c997eb98679237fe3ddf22b40d4379528a9f991bbf1894ef6847ad8d`.
+- **Card-payload SHA-256 (D3, ratified 2026-08-14):** `10a4c3938226a83f72724809d91f817051d29164f517554b5b3ac6f6775c25d4` — over the 83 cards only, in a canonical separator-delimited form (`id` U+001F `name` U+001F `descriptor`, records joined by U+001E). Pinned alongside the file hash because chore C1's sign-off edits `instrument.verification` *inside* the file, which changes the file hash but must not change a card.
 - The deck file is **immutable once C1 sign-off lands**. Any change is a new versioned file (`deck.v2.json`) plus a ratified spec delta.
-- The app bundles and loads this exact JSON; a **fidelity test** asserts count = 83 and the file hash, so deck drift fails CI.
+- **The app does not bundle this JSON (D6, ratified 2026-08-14).** `data/deck.v1.json` is a *build input*: `scripts/generate_deck.py` compiles it into Swift source, and the shipped bundle contains no deck resource. An editable deck — in the repo, the bundle, or on a device — is a vector for harm, because this app puts text in front of people at hard moments and an altered descriptor is easy to miss in a diff. Reading the instrument is welcome; editing it is closed off.
+- Four locks, each verified by executing the attack: editing the JSON fails both hashes and the regeneration check; editing the generated Swift fails the regeneration check and the runtime hash; editing both consistently fails both hashes; patching the binary fails `DeckLoader.validate`, and the app refuses to run a sort. The pinned payload hash is hand-maintained in `DeckLoader.swift` and is **not** emitted by the generator, so a card and the constant guarding it cannot be changed in one edit to one file.
+- The only way a value enters someone's deck at runtime is R4 — a card they write themselves, in the app.
 - Deck data is public domain (the instrument's status); the repo's copyleft license applies to code and original art, not to the instrument data.
 
 ## 5. Product specification
@@ -83,7 +89,8 @@ A **session** is one complete run of the instrument.
 **R5 — Cull.** Cull operates on the *Most important* pile. Cutting a card marks it; cut cards land in *Very important* on completion. If kept < 5 and *Very important* is non-empty, cards may be promoted from *Very important*.
 **R6 — Cull gate.** Cull completes only when 5 ≤ kept ≤ 10. Kept order = surviving *Most important* order, then promotions in promotion order.
 **R7 — Rank.** The kept list is reordered by the user. Position 1 is the most central value. Native idiom: drag-to-reorder with accessibility reorder actions; up/down controls remain available.
-**R8 — Export.** Markdown export with: title; instrument attribution line (authors, institution, year, public domain); completion date; ranked top values (numbered, name + descriptor); full sort by pile, top pile first, using the ranked order for the top pile; empty piles marked *(empty)*; footer rule + date. *(Open item O2: the reference implementation ends with a `#AI/Claude` tag — personal convention; proposed **dropped** from the public build.)* Delivery: system share sheet (`ShareLink`) + copy. A shareable summary-card **image** export is F5-scoped if cheap, else moves to 1.1.
+**R8 — Export.** Markdown export with: title; instrument attribution line (authors, institution, year, public domain); completion date; ranked top values (numbered, name + descriptor); full sort by pile, top pile first, using the ranked order for the top pile; empty piles marked *(empty)*; footer rule + date. The `#AI/Claude` tag the reference implementation emits is **dropped** from the public build (O2, ratified 2026-08-14).
+The date is `session.completedAt`, **not** render-time "now" — the reference implementation uses the latter, so re-exporting an old session misdates it (D4, ratified 2026-08-14). The export body is **locale formatted**: an exported personal document should read naturally to its owner. The R8 golden-file test therefore pins a fixed date *and* a fixed locale; the app does not pin either. Delivery: system share sheet (`ShareLink`) + copy. A shareable summary-card **image** export is F5-scoped if cheap, else moves to 1.1.
 **R9 — Reset / abandon.** Destroying an in-progress session requires explicit confirmation.
 **R10 — Resume.** The app resumes an in-progress session exactly where it left off, mid-phase, across launches.
 **R11 — Keyboard.** With a hardware keyboard (macOS, iPadOS): keys 1–5 assign to piles, U undoes. Full Keyboard Access must work on every screen.
@@ -163,8 +170,8 @@ Every screen passes before its feature is done:
 
 ## 11. Open items for ratification
 
-- **O1** — Minimum OS versions (proposed iOS/iPadOS 18, macOS 15).
-- **O2** — Export footer: drop the `#AI/Claude` tag in the public build (proposed: drop).
+- ~~**O1** — Minimum OS versions.~~ Ratified 2026-08-14: iOS/iPadOS 18, macOS 15.
+- ~~**O2** — Export footer `#AI/Claude` tag.~~ Ratified 2026-08-14: dropped.
 - **O3** — Summary-card image export in 1.0 or 1.1.
 - **O4** — "Civic" theme interpretation (see design handoff — answer it in the design session).
 - **O5** — App icon: separate logo-rules session, timing.
