@@ -78,11 +78,12 @@ jobs:
       matrix:
         include:
           - platform: iOS
-            # Deliberately generic. A pinned model name breaks whenever the
-            # runner image or Xcode version changes its simulator set — Xcode 26
-            # has no "iPhone 16" at all — and this is the ONLY job that runs the
-            # SPEC §6 accessibility gate while macOS UI tests wait on C2.
-            destination: 'platform=iOS Simulator,OS=latest,name=Any iOS Simulator Device'
+            # Empty: resolved at runtime by scripts/pick_simulator.py, because
+            # neither a pinned model name nor the "Any iOS Simulator Device"
+            # placeholder survives a runner image change. This is the ONLY job
+            # that runs the SPEC §6 accessibility gate while macOS UI tests
+            # wait on C2, so it must not fail for cosmetic reasons.
+            destination: ''
             # Unit tests AND the SPEC §6 accessibility gate.
             extra: ''
           - platform: macOS
@@ -117,11 +118,19 @@ jobs:
         run: brew install xcodegen
       - name: Generate project
         run: ./scripts/bootstrap.sh
+      - name: Resolve destination
+        run: |
+          if [ -n '${{ matrix.destination }}' ]; then
+            echo "DEST=${{ matrix.destination }}" >> "$GITHUB_ENV"
+          else
+            echo "DEST=$(python3 scripts/pick_simulator.py)" >> "$GITHUB_ENV"
+          fi
       - name: Test
         run: |
+          echo "destination: $DEST"
           xcodebuild test \
             -scheme ValuesCardSort \
-            -destination '${{ matrix.destination }}' \
+            -destination "$DEST" \
             -resultBundlePath "TestResults-${{ matrix.platform }}.xcresult" \
             ${{ matrix.extra }} \
             CODE_SIGNING_ALLOWED=NO
