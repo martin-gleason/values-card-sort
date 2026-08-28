@@ -43,13 +43,24 @@ jobs:
   # and no SwiftUI, so R1–R8 are testable without building an app.
   package:
     name: Rule tests (swift test)
-    runs-on: macos-15
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
       - name: Select Xcode
-        # D1 ratifies "built against the current SDK". Without this the runner
-        # picks its default Xcode, which is not that.
-        run: sudo xcode-select -switch /Applications/Xcode_26.app
+        # O1 ratifies the Xcode 26 SDK. A hard-coded /Applications/Xcode_26.app
+        # is a guess about the runner image's naming, and a wrong guess fails
+        # the whole job in 10s — so discover the newest Xcode present and assert
+        # the major version instead of assuming a path.
+        run: |
+          ls -d /Applications/Xcode*.app
+          newest="$(ls -d /Applications/Xcode*.app | sort -V | tail -1)"
+          sudo xcode-select -switch "$newest"
+          xcodebuild -version
+          major="$(xcodebuild -version | sed -n '1s/Xcode \([0-9][0-9]*\).*/\1/p')"
+          if [ "${major:-0}" -lt 26 ]; then
+            echo "::error::O1 requires the Xcode 26 SDK; newest on this runner is ${major:-none} ($newest)."
+            exit 1
+          fi
       - name: Show toolchain
         run: swift --version
       - name: Compiled deck is up to date with data/deck.v1.json
@@ -61,7 +72,7 @@ jobs:
   # accessibility audit runs here as a test, not as a promise in a PR body.
   app:
     name: App build + tests (${{ matrix.platform }})
-    runs-on: macos-15
+    runs-on: macos-26
     strategy:
       fail-fast: false
       matrix:
@@ -88,7 +99,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Select Xcode
-        run: sudo xcode-select -switch /Applications/Xcode_26.app
+        # O1 ratifies the Xcode 26 SDK. A hard-coded /Applications/Xcode_26.app
+        # is a guess about the runner image's naming, and a wrong guess fails
+        # the whole job in 10s — so discover the newest Xcode present and assert
+        # the major version instead of assuming a path.
+        run: |
+          ls -d /Applications/Xcode*.app
+          newest="$(ls -d /Applications/Xcode*.app | sort -V | tail -1)"
+          sudo xcode-select -switch "$newest"
+          xcodebuild -version
+          major="$(xcodebuild -version | sed -n '1s/Xcode \([0-9][0-9]*\).*/\1/p')"
+          if [ "${major:-0}" -lt 26 ]; then
+            echo "::error::O1 requires the Xcode 26 SDK; newest on this runner is ${major:-none} ($newest)."
+            exit 1
+          fi
       - name: Install XcodeGen
         run: brew install xcodegen
       - name: Generate project
