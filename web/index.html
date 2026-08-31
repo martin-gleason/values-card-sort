@@ -1166,7 +1166,15 @@ $("btn-json").addEventListener("click", function () {
   var url = URL.createObjectURL(blob);
   var a = document.createElement("a");
   a.href = url;
-  a.download = "values-card-sort-" + completionDate().toISOString().slice(0, 10) + ".json";
+  /* Local date, matching the date the markdown body prints. toISOString() is
+     UTC, so an evening sort west of Greenwich was filed under tomorrow while
+     the document inside it said today — a second date basis in the one feature
+     D4 exists to give a single one. */
+  var d = completionDate();
+  var stamp = d.getFullYear() + "-" +
+    String(d.getMonth() + 1).padStart(2, "0") + "-" +
+    String(d.getDate()).padStart(2, "0");
+  a.download = "values-card-sort-" + stamp + ".json";
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);

@@ -298,6 +298,23 @@ test("R3 undo is LIFO and a full unwind restores the original order", () => {
   assert.deepEqual(T.state().piles, [[], [], [], [], []]);
 });
 
+test("R3 undo refuses to act on a malformed state rather than duplicating a card", () => {
+  const { T } = load();
+  T.assign(2);
+  const s = T.state();
+  // Corrupt the state the way a future bug would: history says the card is in
+  // the pile, and it is not. The reference's filter() is idempotent here; this
+  // port uses indexOf/splice, which is not, so it carries an explicit guard.
+  // Without the guard the card is prepended to the queue while still counted
+  // as placed — a lost card becomes a duplicated one.
+  s.piles[2] = [];
+  const before = JSON.stringify(s);
+  T.undo();
+  assert.equal(JSON.stringify(T.state()), before, "undo must change nothing");
+  assert.equal(T.state().queue.filter((x) => x === s.history[0].card).length, 0,
+    "the card must not be duplicated into the queue");
+});
+
 test("R3 undo does not delete a written card's text", () => {
   const { T } = load();
   const card = T.addCustomCard("belonging", "");
