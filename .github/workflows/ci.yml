@@ -30,6 +30,10 @@ jobs:
         # The gate's own lexer has tests, because an adversarial review showed
         # one line of ordinary Swift could blind it for a whole file.
         run: python3 scripts/test_check_privacy.py
+      - name: Web privacy gate self-test
+        # The web scanner has tests for the same reason the Swift one does: its
+        # first version could be blinded by two string literals.
+        run: python3 scripts/test_check_web_privacy.py
       - name: Deck fidelity (SPEC §4)
         run: ./scripts/check-deck.sh
       - name: Privacy (SPEC §7)

@@ -7,4 +7,11 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-exec python3 scripts/check_privacy.py "$@"
+# Two surfaces, two scanners. The Swift one lexes Swift; the web one lexes
+# JS/HTML. `web/` was in neither for the whole of Web/F1, so this step passed
+# while the page was unscanned — the gate reported on a surface it never read.
+fail=0
+python3 scripts/check_privacy.py "$@" || fail=1
+echo
+python3 scripts/check_web_privacy.py "$@" || fail=1
+exit $fail
