@@ -40,14 +40,15 @@ Counted from the register itself. A register with no rows still gets a line.
 | Owner items (`O`) | 0 | 0 | 0 |
 | Hooks (`H`) | 0 | 0 | 0 |
 | Mutations (`M`) | 0 | 0 | 0 |
-| Other (C) (`C`) | 5 | 5 | 0 |
+| Other (C) (`C`) | 5 | 4 | 1 |
 
 ### By status
 
 | Register | Status | Count |
 |---|---|---|
 | `D` | open | 7 |
-| `C` | open | 5 |
+| `C` | done | 1 |
+| `C` | open | 4 |
 
 ## Hooks
 
@@ -71,10 +72,9 @@ Every open row in the register. Owner is the row's Owner column where the table 
 | owner | D7 | — | open | SPEC §3.1 amended: stock components except where they fail the §6 gate. List cannot pass a strict audit — six issues sur… |
 | — | C1 | — | open | Download both source PDFs into fixtures/, then review the agent's card-by-card verification and sign off |
 | — | C2 | — | open | Apple Developer Program enrollment ($99/yr) |
-| — | C3 | — | open | Create the GitHub repository; enable branch protection on main |
 | — | C4 | — | open | App Store Connect + TestFlight setup, beta review submission |
 | — | C5 | — | open | Run the design session with docs/design/design-handoff-card-themes.md; bring back theme specs |
 
 ---
 
-12 open register rows.
+11 open register rows.
