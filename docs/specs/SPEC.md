@@ -158,6 +158,25 @@ Every screen passes before its feature is done:
 | F9 | About / Settings / attribution | |
 | F10 | Accessibility audit + polish | Final gate before TestFlight |
 
+The table above is the **native app** milestone. A second milestone was added by
+`D8` (ratified 2026-08-31):
+
+**Milestone `Web`** — a self-contained static port of the instrument, served
+from GitHub Pages, so it is usable by anyone with a browser without waiting for
+TestFlight. It ships no bundler, no `node_modules` and no CDN: the page is two
+files a reader can view-source.
+
+| ID | Feature | Notes |
+|---|---|---|
+| `Web/F1` | The port: deck emitter, sort, cull, rank, export, accessibility gate | R1–R11 **except R10** — there is no persistence to resume from |
+| `Web/F1b` | Retrofit: adversarial review fixes | privacy gate, R8 golden file, WCAG 1.4.10 reflow, `beforeunload` |
+| `Web/F2` | Pages deployment | Actions artifact upload of `web/` (`D9`) |
+
+**IDs are milestone-qualified** — `Web/F1`, `Web/F1-T3`, branch `Web/F1/port`,
+commit scope `feat(Web/F1-T2)`. This is the first time the repository has
+carried two milestones at once, and two bare `F1`s would make every citation
+ambiguous. The native milestone's `F1`–`F10` keep their bare form.
+
 **Chores (human track):**
 
 | ID | Chore | Owner |
