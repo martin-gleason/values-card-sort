@@ -10,23 +10,47 @@ node scripts/check_web_a11y.js --evidence docs/evidence/web
 
 ## Result
 
+Verbatim output of the command above. **Nothing is trimmed.**
+
 ```
 Accessibility gate — WCAG 2.2 AA, no exemptions (the web D5)
 
-  ok   1-sort              24 rules passed
-  ok   2-sort-add-card     25 rules passed
-  ok   3-sort-complete     22 rules passed
-  ok   4-cull              24 rules passed
-  ok   5-cull-promote      24 rules passed
-  ok   6-rank              24 rules passed
-  ok   7-export            25 rules passed
-  ok   8-reset-dialog      15 rules passed
+  ok   1-sort @desktop                 24 rules passed
+  ok   1-sort @narrow                  24 rules passed
+  ok   2-sort-add-card @desktop        25 rules passed
+  ok   2-sort-add-card @narrow         25 rules passed
+  ok   3-sort-complete @desktop        22 rules passed
+  ok   3-sort-complete @narrow         22 rules passed
+  ok   4-cull @desktop                 24 rules passed
+  ok   4-cull @narrow                  24 rules passed
+  ok   5-cull-promote @desktop         24 rules passed
+  ok   5-cull-promote @narrow          24 rules passed
+  ok   6-rank @desktop                 24 rules passed
+  ok   6-rank @narrow                  24 rules passed
+  ok   7-export @desktop               25 rules passed
+  ok   7-export @narrow                25 rules passed
+  ok   9-rank-unbreakable-name @desktop  24 rules passed
+  ok   9-rank-unbreakable-name @narrow  24 rules passed
+  ok   8-reset-dialog @desktop         15 rules passed
+  ok   8-reset-dialog @narrow          15 rules passed
 
-PASSED — 0 violations across 8 states (WCAG 2.2 AA).
+Evidence written to docs/evidence/web/
+
+PASSED — 0 failures across 9 states x 2 viewports (WCAG 2.2 AA, Reduce Motion on).
 ```
 
 Tags run: `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa`, `wcag22aa`. No rule is
-disabled. `axe-report.json` carries the machine-readable run.
+disabled. Every state is audited at **1024px and 320px** with
+**Reduce Motion emulated**, and horizontal overflow is asserted at both widths
+(WCAG 1.4.10). `axe-report.json` carries the machine-readable run.
+
+> **An earlier version of this file was not honest.** The block above used to be
+> hand-written: it dropped the `[needs review: color-contrast]` suffixes and
+> around thirty `?` detail lines, so it read clean when the real output was not.
+> `axe-report.json` was accurate throughout; the transcript above it was not.
+> In a repository whose baseline says *assertions are not evidence*, a doctored
+> transcript is worse than none, and it is recorded here rather than quietly
+> replaced.
 
 Full-page captures of each audited state, at 2x device pixel ratio:
 
@@ -40,6 +64,7 @@ Full-page captures of each audited state, at 2x device pixel ratio:
 | Rank — order the kept values (R7) | `6-rank.png` |
 | Export — results, markdown, downloads (R8) | `7-export.png` |
 | Export — start-over confirmation (R9) | `8-reset-dialog.png` |
+| Rank — a written card with a long unbroken name (R4 + 1.4.10) | `9-rank-unbreakable-name.png` |
 
 **Eight states, not four screens.** The two transient states — the
 write-your-own-card form and the start-over confirmation — are audited too. A
@@ -51,6 +76,13 @@ axe reports `color-contrast` as **incomplete** rather than failing it when it
 cannot resolve a background. Incomplete is not a pass, and under `D5` it cannot
 be shrugged off, so every case was computed by hand. **One of them was a real
 defect that the automated gate could not see.**
+
+**The gate now fails on any incomplete it does not recognise.** Each row below
+is registered in `REVIEWED_INCOMPLETE` in `scripts/check_web_a11y.js` with the
+hand-computed ratio; anything else stops the build until someone measures it.
+The first version counted only `violations`, so a new contrast defect over the
+ruled gradient would have printed `PASSED` — the same hole that hid the 3.34:1
+failure, still open in the tool that found it.
 
 | Where | Why axe declined | Worst case | Verdict |
 |---|---|---|---|

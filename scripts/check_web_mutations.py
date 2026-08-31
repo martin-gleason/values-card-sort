@@ -98,6 +98,28 @@ MUTATIONS = [
      '  S.history.push({ card: id, pile: p }); var a = "/*"; localStorage.setItem("x","1"); var b = "*/";',
      "SPEC §7", "the page touches no storage or network API"),
 
+    # M15-M18: the four export mutations that survived before R8 had a golden
+    # file. All four leave every "does the heading appear" assertion green.
+    ("M15", "web/index.html",
+     's += "\\n## Full sort\\n";\n  for (var p = 4; p >= 0; p--) {',
+     's += "\\n## Full sort\\n";\n  for (var p = 0; p <= 4; p++) {',
+     "R8", "R8 the markdown export matches the golden file"),
+
+    ("M16", "web/index.html",
+     '    var ids = (p === 4) ? S.ranking : S.piles[p];\n    if (!ids.length)',
+     '    var ids = S.piles[p];\n    if (!ids.length)',
+     "R8", "R8 the markdown export matches the golden file"),
+
+    ("M17", "web/index.html",
+     '  s += "Completed: " + date + "\\n\\n## Top values (ranked)\\n\\n";',
+     '  s += "\\n## Top values (ranked)\\n\\n";',
+     "R8", "R8 the markdown export matches the golden file"),
+
+    ("M18", "web/index.html",
+     '      s += "- " + c.name + " - " + c.descriptor + "\\n";',
+     '      s += "- " + c.name + "\\n";',
+     "R8", "R8 the markdown export matches the golden file"),
+
     ("M13", "web/index.html",
      '"Most important to me"',
      '"The most important ones"',
