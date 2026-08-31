@@ -1,0 +1,1238 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!--
+  Personal Values Card Sort — web port (Web/F1).
+
+  A vanilla-JS port of reference/valuescardsort.jsx. No build step, no bundler,
+  no node_modules, no CDN: view-source is the whole program, which is the same
+  claim the native app makes by having no third-party dependencies.
+
+  Three things this page deliberately does NOT do:
+
+    * It writes nothing. No localStorage, no sessionStorage, no cookies, no
+      IndexedDB. The reference persisted through a window.storage bridge; those
+      three touchpoints are removed rather than reimplemented. A beforeunload
+      warning is the only concession, and it is a courtesy, not a promise —
+      browsers ignore it without prior interaction.
+    * It talks to nothing. No fetch, no XMLHttpRequest, no WebSocket, no
+      analytics, no fonts or scripts from a CDN. After the page loads, the
+      network is not used again. The only external URLs are attribution links
+      the reader chooses to follow.
+    * It does not carry its own copy of the deck. web/deck.js is generated from
+      data/deck.v1.json and gated by CI, so this page and the native app cannot
+      drift apart from the instrument.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Personal Values Card Sort</title>
+<meta name="description" content="The Personal Values Card Sort (Miller, C'de Baca, Matthews &amp; Wilbourne, 2001) — a free, private, offline card sort. Nothing you enter leaves this page.">
+<meta name="color-scheme" content="dark light">
+<style>
+/* ---------------------------------------------------------------------------
+   Palette.
+
+   The reference implementation's colours, corrected where they failed WCAG 2.2
+   AA. Accessibility is a gate here with no exemptions — the web analogue of D5
+   — so these are computed ratios, not impressions:
+
+     --accent  #C34F45  white text on it   4.64:1  (was #C75146 at 4.47 — under)
+                        on --paper         4.52:1  (was 4.35 — under)
+     --accent-felt      on --felt          3.03:1  for the progress fill, which
+                        conveys state and so owes 3:1 under WCAG 1.4.11
+     --muted   #9BB4A9  on --felt          5.63:1  replaces the reference's
+                        rgba(255,255,255,.45) attribution (3.84) and
+                        rgba(255,255,255,.35) hint (2.91), both of which failed
+
+   --rule and --redrule stay exactly as the reference has them, at 1.35:1 and
+   2.26:1 against the paper. That is not an exemption: they are the printed
+   lines of an index card and carry no information whatsoever. WCAG 1.4.11
+   scopes to graphics needed to understand content or identify a control, and
+   these are neither. Darkening them to clear a threshold that does not apply
+   would wreck the card face and buy no one anything.
+--------------------------------------------------------------------------- */
+:root {
+  --felt: #20392F;
+  --felt-raised: #324940;
+  --paper: #FDFCF6;
+  --ink: #25322C;
+  --rule: #C9DEE9;
+  --redrule: #DB9A93;
+  --accent: #C34F45;
+  --accent-felt: #D1554A;
+  /* Accent used as TEXT, wherever it can land on the card's ruled gradient.
+     axe reports contrast over a gradient as "incomplete" rather than failing
+     it, so this one was invisible to the gate and had to be computed by hand:
+     --accent on the rule colour #C9DEE9 is 3.34:1, under the 4.5:1 it owes.
+     #A04139 is 4.56:1 there, 6.17:1 on the paper band, and 6.34:1 under white.
+     Fills keep --accent; only accent *text* uses this. */
+  --accent-ink: #A04139;
+  --cream: #F3EFE4;
+  --muted: #9BB4A9;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --serif: Georgia, "Times New Roman", serif;
+  /* Focus ring, per surface. Cream on the desk is 10.83:1; ink on paper is
+     13:1. Both clear the 3:1 that WCAG 1.4.11 asks of a focus indicator with
+     room to spare, at every zoom level. */
+  --focus: var(--cream);
+  --tap: 44px;   /* SPEC §6's target size. WCAG 2.5.8 AA asks 24px; the native
+                    app promises 44pt and this surface keeps the same promise. */
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  padding: 1.5rem 1rem 4rem;
+  background: var(--felt);
+  color: var(--cream);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 100%;
+  line-height: 1.5;
+}
+
+.wrap { max-width: 42rem; margin: 0 auto; }
+
+/* Everything interactive gets the same visible ring. Never remove it without
+   replacing it — :focus-visible keeps it off mouse clicks. */
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.skip {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  background: var(--cream);
+  color: var(--ink);
+  padding: .75rem 1rem;
+  font-weight: 700;
+  z-index: 10;
+}
+.skip:focus { left: .5rem; top: .5rem; }
+
+/* --- Header ------------------------------------------------------------- */
+
+.eyebrow {
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: .7rem;
+  letter-spacing: .25em;
+  margin: 0;
+}
+h1 {
+  font-size: .7rem;
+  letter-spacing: .25em;
+  font-family: var(--mono);
+  font-weight: 400;
+  color: var(--muted);
+  margin: 0;
+}
+.attribution {
+  color: var(--muted);
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: .85rem;
+  margin: .25rem 0 1.25rem;
+}
+.attribution a { color: var(--muted); }
+.attribution a:hover { color: var(--cream); }
+
+.phasebar {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  color: var(--cream);
+  font-family: var(--mono);
+  font-size: .78rem;
+  letter-spacing: .15em;
+  margin-bottom: .75rem;
+}
+.counter { color: var(--muted); letter-spacing: normal; }
+
+.track {
+  height: .3rem;
+  background: rgba(255,255,255,.14);
+  border-radius: 2px;
+  margin-bottom: 1.5rem;
+  overflow: hidden;
+}
+.fill {
+  height: 100%;
+  background: var(--accent-felt);
+  border-radius: 2px;
+  width: 0;
+  transition: width .2s ease;
+}
+
+.notice {
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: .72rem;
+  line-height: 1.6;
+  margin: 0 0 1.25rem;
+  padding-left: .75rem;
+  border-left: 2px solid var(--felt-raised);
+}
+
+/* --- The card face ------------------------------------------------------ */
+
+.card {
+  position: relative;
+  background: var(--paper);
+  color: var(--ink);
+  border-radius: 2px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.35);
+  transform: rotate(-.4deg);
+  /* The ruled lines. 2rem rhythm so they stay locked to the text baseline as
+     the reader zooms — a fixed 32px grid drifts out of register at 200%. */
+  background-image: repeating-linear-gradient(
+    to bottom, transparent 0, transparent calc(2rem - 1px),
+    var(--rule) calc(2rem - 1px), var(--rule) 2rem);
+  padding: .6rem 1.5rem 1.5rem;
+  margin-bottom: 1.5rem;
+}
+.card::before {
+  /* The red margin rule of an index card. Decorative. */
+  content: "";
+  position: absolute;
+  left: 0; right: 0; top: 2.75rem;
+  border-top: 2px solid var(--redrule);
+}
+.card.big { min-height: 14rem; }
+.card-name {
+  font-weight: 800;
+  letter-spacing: .08em;
+  line-height: 2rem;
+  margin: 0;
+  font-size: 1rem;
+}
+.card.big .card-name { font-size: 1.5rem; }
+.card-desc {
+  font-family: var(--serif);
+  font-style: italic;
+  line-height: 2rem;
+  margin: .25rem 0 0;
+  font-size: .9rem;
+}
+.card.big .card-desc { font-size: 1.1rem; }
+.card :focus-visible { --focus: var(--ink); }
+
+/* --- Pile buttons ------------------------------------------------------- */
+
+.piles {
+  display: flex; flex-direction: column; gap: .5rem;
+  margin-bottom: 1rem; padding: 0; list-style: none;
+}
+
+.pile {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  width: 100%;
+  min-height: var(--tap);
+  padding: .6rem 1rem;
+  text-align: left;
+  background: var(--cream);
+  color: var(--ink);
+  border: 0;
+  border-left: 5px solid transparent;
+  border-radius: 2px;
+  font: inherit;
+  font-size: .95rem;
+  cursor: pointer;
+}
+/* Only the top pile carries the accent stripe. Scoped through the <li>,
+   because every .pile is the last child of its own list item. */
+.piles li:last-child .pile { border-left-color: var(--accent); }
+.pile:hover { background: #fff; }
+.pile:active { transform: scale(.99); }
+.pile .key {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  flex: 0 0 auto;
+  border: 1px solid var(--ink);
+  border-radius: 50%;
+  font-family: var(--mono);
+  font-size: .72rem;
+}
+.pile .label { flex: 1; font-weight: 600; }
+.pile .tally { font-family: var(--mono); font-size: .78rem; color: #55635C; }
+.pile :focus-visible, .paper :focus-visible { --focus: var(--ink); }
+
+/* --- Buttons ------------------------------------------------------------ */
+
+.row { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: .75rem; }
+
+button.btn {
+  min-height: var(--tap);
+  padding: .5rem 1rem;
+  border: 0;
+  border-radius: 3px;
+  background: var(--felt-raised);
+  color: var(--cream);
+  font-family: var(--mono);
+  font-size: .8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+button.btn:hover:not(:disabled) { background: #3c564b; }
+button.btn.primary { background: var(--accent); color: #fff; }
+button.btn.primary:hover:not(:disabled) { background: #b0473e; }
+button.btn:disabled { opacity: .45; cursor: not-allowed; }
+button.btn.danger { color: #F0BDB6; }
+
+.hint {
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: .72rem;
+  margin: 0 0 1rem;
+}
+
+/* --- Paper panels (add-card form, cull/rank rows) ----------------------- */
+
+.paper {
+  background: var(--paper);
+  color: var(--ink);
+  border-radius: 2px;
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 10px 30px rgba(0,0,0,.35);
+}
+.paper h2 { margin-top: 0; }
+
+label { display: block; font-weight: 700; font-size: .8rem; letter-spacing: .04em; margin-bottom: .25rem; }
+input[type=text] {
+  width: 100%;
+  min-height: var(--tap);
+  padding: .5rem .75rem;
+  margin-bottom: .9rem;
+  border: 1px solid #8A9C93;
+  border-radius: 3px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+}
+input[type=text]::placeholder { color: #5C6B64; }
+.field-note { font-size: .78rem; color: #48564F; margin: -.6rem 0 .9rem; }
+
+h2.section { font-size: 1rem; font-family: var(--serif); font-style: italic; font-weight: 400; color: var(--cream); margin: 0 0 .75rem; }
+
+.tally-line { font-family: var(--mono); font-size: .82rem; margin: 0 0 1rem; color: var(--muted); }
+.tally-line.warn { color: #F0A9A1; }
+
+.stack { display: flex; flex-direction: column; gap: .5rem; margin-bottom: 1.5rem; padding: 0; list-style: none; }
+
+.item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  min-height: var(--tap);
+  padding: .6rem 1rem;
+  background: var(--paper);
+  color: var(--ink);
+  border: 0;
+  border-left: 5px solid transparent;
+  border-radius: 2px;
+  text-align: left;
+  font: inherit;
+  box-shadow: 0 4px 12px rgba(0,0,0,.25);
+}
+button.item { cursor: pointer; }
+.item .nm { font-weight: 800; letter-spacing: .06em; display: block; }
+.item .ds { font-family: var(--serif); font-style: italic; font-size: .85rem; display: block; }
+.item.cut { background: #DAD8CF; }
+.item.cut .nm { text-decoration: line-through; }
+.item.promoted { border-left-color: var(--accent); }
+.item .rank-no { font-family: var(--mono); font-weight: 700; color: var(--accent-ink); width: 1.75rem; flex: 0 0 auto; }
+.item .body { flex: 1; }
+.item .move {
+  min-width: var(--tap); min-height: var(--tap);
+  border: 1px solid #8A9C93; border-radius: 3px;
+  background: #fff; color: var(--ink);
+  font-family: var(--mono); font-size: 1rem; cursor: pointer;
+}
+.item .move:disabled { opacity: .3; cursor: not-allowed; }
+.state { font-family: var(--mono); font-size: .72rem; color: #48564F; flex: 0 0 auto; }
+
+textarea {
+  width: 100%;
+  min-height: 16rem;
+  padding: .75rem;
+  background: rgba(0,0,0,.3);
+  color: var(--cream);
+  border: 1px solid rgba(255,255,255,.25);
+  border-radius: 3px;
+  font-family: var(--mono);
+  font-size: .75rem;
+  line-height: 1.6;
+}
+
+dialog {
+  border: 0;
+  border-radius: 4px;
+  padding: 1.5rem;
+  max-width: 26rem;
+  background: var(--paper);
+  color: var(--ink);
+}
+dialog::backdrop { background: rgba(0,0,0,.6); }
+dialog h2 { margin: 0 0 .5rem; font-size: 1.1rem; }
+dialog p { margin: 0 0 1.25rem; }
+dialog :focus-visible { --focus: var(--ink); }
+
+footer {
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--felt-raised);
+  color: var(--muted);
+  font-size: .78rem;
+  line-height: 1.7;
+}
+footer a { color: var(--muted); }
+footer a:hover { color: var(--cream); }
+
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px;
+  margin: -1px; padding: 0; overflow: hidden;
+  clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
+}
+
+[hidden] { display: none !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
+  }
+  .card { transform: none; }
+  .pile:active { transform: none; }
+}
+
+/* --- Print: this is the PDF path (no library, zero bytes shipped) -------- */
+
+@media print {
+  :root { --focus: transparent; }
+  body { background: #fff; color: #000; padding: 0; font-size: 11pt; }
+  .no-print, .track, .phasebar, .skip, .notice, dialog { display: none !important; }
+  .wrap { max-width: none; }
+  h1, .attribution, .attribution a { color: #000; }
+  .card {
+    transform: none; box-shadow: none; background: #fff;
+    background-image: none; border: 1px solid #000;
+    break-inside: avoid;
+  }
+  .card::before { border-top-color: #000; }
+  .item {
+    box-shadow: none; background: #fff;
+    border: 1px solid #666; break-inside: avoid;
+  }
+  .item .rank-no { color: #000; }
+  footer { color: #000; border-top: 1px solid #000; }
+  .print-only { display: block !important; }
+}
+.print-only { display: none; }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to the card sort</a>
+
+<div class="wrap">
+
+<header>
+  <h1>Personal Values Card Sort</h1>
+  <p class="attribution">
+    Miller, C&rsquo;de Baca, Matthews &amp; Wilbourne &middot;
+    University of New Mexico, 2001 &middot; public domain
+  </p>
+</header>
+
+<main id="main">
+  <div class="phasebar">
+    <span id="phase-label">PHASE 1 OF 4 &middot; SORT THE DECK</span>
+    <span class="counter" id="counter" hidden></span>
+  </div>
+  <div class="track no-print" id="track" aria-hidden="true"><div class="fill" id="fill"></div></div>
+
+  <!-- One polite live region for the whole app. Announces the card that just
+       arrived and the result of an action, so a screen-reader user is not left
+       guessing what a button press did. -->
+  <p class="visually-hidden" id="status" role="status" aria-live="polite"></p>
+
+  <!-- ================= SORT ================= -->
+  <section id="sec-sort" aria-labelledby="phase-label">
+    <p class="notice">
+      Nothing here is saved. This page stores no data and sends none anywhere &mdash;
+      closing or reloading the tab loses your sort. On a phone, avoid switching
+      apps mid-sort: the browser may discard the tab.
+    </p>
+
+    <div id="sort-live">
+      <div class="card big" id="card">
+        <p class="card-name" id="card-name"></p>
+        <p class="card-desc" id="card-desc"></p>
+      </div>
+
+      <ul class="piles" id="piles"></ul>
+
+      <div class="row">
+        <button type="button" class="btn" id="btn-undo">Undo</button>
+        <button type="button" class="btn" id="btn-add">+ Write your own card</button>
+      </div>
+      <p class="hint">Keyboard: 1&ndash;5 to sort &middot; U to undo</p>
+    </div>
+
+    <!-- Queue-empty interstitial -->
+    <div id="sort-done" hidden>
+      <div class="card big">
+        <p class="card-name">DECK SORTED</p>
+        <p class="card-desc" id="done-desc"></p>
+      </div>
+      <div class="row">
+        <button type="button" class="btn primary" id="btn-to-cull">Continue</button>
+        <button type="button" class="btn" id="btn-undo-2">Undo last</button>
+        <button type="button" class="btn" id="btn-add-2">+ Add a card</button>
+      </div>
+    </div>
+
+    <!-- Write-your-own-card form -->
+    <form id="add-form" class="paper" hidden>
+      <h2>Your own value</h2>
+      <label for="new-name">Name</label>
+      <input type="text" id="new-name" name="name" autocomplete="off"
+             placeholder="e.g. COMMUNITY" required>
+      <p class="field-note">Written in capitals, to sit alongside the printed cards.</p>
+      <label for="new-desc">What it means to you</label>
+      <input type="text" id="new-desc" name="desc" autocomplete="off"
+             placeholder="to belong somewhere">
+      <p class="field-note">Optional. Left blank, it reads &ldquo;a value I wrote myself&rdquo;.</p>
+      <div class="row">
+        <button type="submit" class="btn primary">Add to deck</button>
+        <button type="button" class="btn" id="btn-add-cancel">Cancel</button>
+      </div>
+    </form>
+  </section>
+
+  <!-- ================= CULL ================= -->
+  <section id="sec-cull" hidden aria-labelledby="cull-h">
+    <h2 class="section" id="cull-h">Keep your 5 to 10 most important. Choose a card to cut it.</h2>
+    <p class="tally-line" id="cull-tally" role="status" aria-live="polite"></p>
+    <ul class="stack" id="cull-list"></ul>
+
+    <div id="promote-block" hidden>
+      <h2 class="section" id="promote-h">Short of five &mdash; promote from Very important:</h2>
+      <ul class="stack" id="promote-list"></ul>
+    </div>
+
+    <div class="row">
+      <button type="button" class="btn primary" id="btn-to-rank">Continue to ranking</button>
+      <button type="button" class="btn" id="btn-back-sort">Back</button>
+    </div>
+  </section>
+
+  <!-- ================= RANK ================= -->
+  <section id="sec-rank" hidden aria-labelledby="rank-h">
+    <h2 class="section" id="rank-h">Order them. Number one is the value most central to who you are.</h2>
+    <ol class="stack" id="rank-list"></ol>
+    <div class="row">
+      <button type="button" class="btn primary" id="btn-to-export">Finish</button>
+      <button type="button" class="btn" id="btn-back-cull">Back</button>
+    </div>
+  </section>
+
+  <!-- ================= EXPORT ================= -->
+  <section id="sec-export" hidden aria-labelledby="export-h">
+    <h2 class="visually-hidden" id="export-h">Your results</h2>
+    <div class="card" id="result-card">
+      <p class="card-name">MY VALUES</p>
+      <div id="result-list"></div>
+    </div>
+
+    <div class="print-only" id="print-full"></div>
+
+    <h2 class="section">Copy this into your notes, or save it:</h2>
+    <label for="md" class="visually-hidden">Your results as Markdown</label>
+    <textarea id="md" readonly class="no-print"></textarea>
+
+    <div class="row no-print">
+      <button type="button" class="btn primary" id="btn-copy">Copy results</button>
+      <button type="button" class="btn" id="btn-json">Download JSON</button>
+      <button type="button" class="btn" id="btn-print">Save as PDF</button>
+    </div>
+    <div class="row no-print">
+      <button type="button" class="btn" id="btn-back-rank">Back</button>
+      <button type="button" class="btn danger" id="btn-reset">Start over</button>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <p id="instrument-line"></p>
+  <p>
+    This adaptation is free software under the
+    <a href="https://www.gnu.org/licenses/gpl-3.0.html">GNU GPL v3 or later</a>,
+    and its source is on
+    <a href="https://github.com/martin-gleason/values-card-sort">GitHub</a>.
+    It stores nothing and sends nothing anywhere.
+  </p>
+</footer>
+
+</div>
+
+<dialog id="reset-dialog" aria-labelledby="reset-h">
+  <h2 id="reset-h">Start over?</h2>
+  <p>Your entire sort will be erased. This cannot be undone.</p>
+  <div class="row" style="margin:0">
+    <button type="button" class="btn primary" id="reset-confirm">Erase and start over</button>
+    <button type="button" class="btn" id="reset-cancel">Keep sorting</button>
+  </div>
+</dialog>
+
+<script src="deck.js"></script>
+<script>
+"use strict";
+(function () {
+
+/* ===========================================================================
+   The instrument's rules, R1–R11, ported from reference/valuescardsort.jsx.
+
+   The state object mirrors the native `SessionState` field for field, and the
+   JSON download is its faithful encoding — same keys, same card-id strings,
+   same date basis. That is not tidiness: one schema documents both surfaces,
+   and it leaves the door open for a sort begun in a browser to be opened by
+   the native app later.
+   ======================================================================== */
+
+var DECK = globalThis.VCS_DECK_V1;
+
+if (!DECK || !Array.isArray(DECK.cards) || DECK.cards.length !== DECK.cardCount) {
+  document.getElementById("main").innerHTML =
+    '<p class="notice">The deck failed to load, so this page will not start a ' +
+    'sort it cannot vouch for. Please reload.</p>';
+  return;
+}
+
+/* The five piles are contract (SPEC §5.2 R2). These exact strings appear in the
+   markdown export, so rewording one silently changes documents people have
+   already saved. Order is least to most important, matching the native
+   `Pile` enum's raw values and the 1–5 keys of R11. */
+var PILES = [
+  "Not important to me",
+  "Somewhat important to me",
+  "Important to me",
+  "Very important to me",
+  "Most important to me"
+];
+
+var PHASES = ["sort", "cull", "rank", "export"];
+var PHASE_NAMES = {
+  sort: "SORT THE DECK",
+  cull: "CHOOSE 5-10",
+  rank: "RANK THEM",
+  export: "YOUR CARD"
+};
+
+/* Swift's JSONEncoder writes Date as seconds since the Apple reference date,
+   2001-01-01 UTC. Matching it is what makes the JSON download actually the
+   native schema rather than a lookalike. */
+var APPLE_EPOCH_OFFSET = 978307200;
+function appleTime(ms) { return ms / 1000 - APPLE_EPOCH_OFFSET; }
+
+/* Uppercase, hyphenated, like Swift's UUID.uuidString. crypto.randomUUID is
+   absent over file://, so fall back to getRandomValues, which is not. */
+function uuid() {
+  if (crypto.randomUUID) return crypto.randomUUID().toUpperCase();
+  var b = crypto.getRandomValues(new Uint8Array(16));
+  b[6] = (b[6] & 0x0f) | 0x40;
+  b[8] = (b[8] & 0x3f) | 0x80;
+  var h = [].map.call(b, function (x) { return x.toString(16).padStart(2, "0"); }).join("");
+  return (h.slice(0, 8) + "-" + h.slice(8, 12) + "-" + h.slice(12, 16) + "-" +
+          h.slice(16, 20) + "-" + h.slice(20)).toUpperCase();
+}
+
+/* R1 — Fisher–Yates, as the reference and the native Shuffler both do. */
+function shuffle(a) {
+  var x = a.slice();
+  for (var i = x.length - 1; i > 0; i--) {
+    var j = crypto.getRandomValues(new Uint32Array(1))[0] % (i + 1);
+    var t = x[i]; x[i] = x[j]; x[j] = t;
+  }
+  return x;
+}
+
+var S = null;          // the session
+var cardText = {};     // CardID -> {name, descriptor}
+var draft = { cut: [], promotions: [] };   // cull working set, not yet committed
+
+function freshSession() {
+  var ids = DECK.cards.map(function (c) { return "deck:" + c.id; });
+  var order = shuffle(ids);
+  var now = Date.now();
+  return {
+    id: uuid(),
+    startedAt: appleTime(now),
+    completedAt: null,
+    deckVersion: DECK.deckVersion,
+    shuffleOrder: order,
+    queue: order.slice(),
+    piles: [[], [], [], [], []],
+    history: [],
+    cut: [],
+    promotions: [],
+    ranking: [],
+    customCards: [],
+    phase: "sort",
+    themeID: "note-card"
+  };
+}
+
+function indexDeck() {
+  cardText = {};
+  DECK.cards.forEach(function (c) {
+    cardText["deck:" + c.id] = { name: c.name, descriptor: c.descriptor };
+  });
+}
+
+function textFor(id) {
+  return cardText[id] || { name: "(unknown card)", descriptor: "" };
+}
+
+/* --- The verbs, R2/R3/R4. Guard-clause shape: an operation with nothing to
+       do is a no-op, not a trap, so the buttons may stay live at the edges. -- */
+
+function assign(p) {                                     // R2
+  if (!S.queue.length) return;
+  var id = S.queue.shift();
+  S.piles[p].push(id);                                   /* append, never
+     insert: a pile's order IS its assignment order, and it survives into the
+     ranked export via R6. */
+  S.history.push({ card: id, pile: p });
+  announce(textFor(id).name + " sorted into " + PILES[p] + ".");
+  render();
+}
+
+function undo() {                                        // R3
+  if (!S.history.length) return;
+  var last = S.history[S.history.length - 1];
+  var i = S.piles[last.pile].indexOf(last.card);
+  if (i === -1) return;            // state already malformed; do not duplicate
+  S.history.pop();
+  S.piles[last.pile].splice(i, 1);
+  S.queue.unshift(last.card);                            // back to the front
+  announce(textFor(last.card).name + " taken back out of " + PILES[last.pile] + ".");
+  render();
+}
+
+function addCustomCard(name, descriptor) {               // R4
+  var n = name.trim().toUpperCase();
+  if (!n) return null;                                   // a name is required
+  var d = (descriptor || "").trim() || "a value I wrote myself";
+  var card = { id: uuid(), name: n, descriptor: d, createdAt: appleTime(Date.now()) };
+  S.customCards.push(card);
+  var cid = "custom:" + card.id;
+  cardText[cid] = { name: n, descriptor: d };
+  S.queue.unshift(cid);                                  // sorted next
+  announce(n + " added to the deck. It is the next card.");
+  render();
+  return card;
+}
+
+/* --- R5/R6 — cull and promotion ---------------------------------------- */
+
+function keptIDs() {
+  var out = S.piles[4].filter(function (id) { return draft.cut.indexOf(id) === -1; });
+  return out.concat(draft.promotions);   /* promotion order is load-bearing:
+     R6 defines kept order as surviving Most-important order followed by
+     promotions in the order they were promoted. */
+}
+
+function finishCull() {
+  var kept = keptIDs();
+  if (kept.length < 5 || kept.length > 10) return;
+  var p4 = S.piles[4].filter(function (id) { return draft.cut.indexOf(id) === -1; })
+                     .concat(draft.promotions);
+  var p3 = S.piles[3].filter(function (id) { return draft.promotions.indexOf(id) === -1; })
+                     .concat(draft.cut);
+  S.piles[3] = p3;
+  S.piles[4] = p4;
+  S.cut = draft.cut.slice();
+  S.promotions = draft.promotions.slice();
+  S.ranking = kept.slice();
+  go("rank");
+}
+
+function move(i, d) {                                    // R7
+  var j = i + d;
+  if (j < 0 || j >= S.ranking.length) return;
+  var t = S.ranking[i]; S.ranking[i] = S.ranking[j]; S.ranking[j] = t;
+  announce(textFor(S.ranking[j]).name + " moved to position " + (j + 1) + ".");
+  render();
+  var btn = document.querySelector('[data-rank-index="' + j + '"][data-dir="' + d + '"]');
+  if (btn && !btn.disabled) { btn.focus(); }
+  else {
+    var row = document.querySelector('[data-rank-row="' + j + '"]');
+    if (row) row.focus();
+  }
+}
+
+function go(phase) {
+  S.phase = phase;
+  if (phase === "cull") { draft.cut = []; draft.promotions = []; }
+  /* D4 — the export date is the moment the sort was completed, captured once.
+     The reference stamps `new Date()` inside a render memo, so re-rendering an
+     old result silently re-dates it. */
+  if (phase === "export" && S.completedAt === null) {
+    S.completedAt = appleTime(Date.now());
+  }
+  render();
+  window.scrollTo(0, 0);
+  announce("Phase " + (PHASES.indexOf(phase) + 1) + " of 4: " + PHASE_NAMES[phase] + ".");
+}
+
+/* --- Export ------------------------------------------------------------- */
+
+function completionDate() {
+  var ms = (S.completedAt !== null ? S.completedAt : appleTime(Date.now()) ) ;
+  return new Date((ms + APPLE_EPOCH_OFFSET) * 1000);
+}
+
+function longDate(d) {
+  return d.toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
+}
+
+function markdown() {                                    // R8
+  var inst = DECK.instrument;
+  var date = longDate(completionDate());
+  var s = "# Personal Values Card Sort - Results\n\n";
+  s += "Instrument: " + inst.authors + " (" + inst.institution + ", " + inst.year + "). " +
+       inst.copyright + ".\n";
+  s += "Completed: " + date + "\n\n## Top values (ranked)\n\n";
+  S.ranking.forEach(function (id, i) {
+    var c = textFor(id);
+    s += (i + 1) + ". **" + c.name + "** - " + c.descriptor + "\n";
+  });
+  s += "\n## Full sort\n";
+  for (var p = 4; p >= 0; p--) {
+    s += "\n### " + PILES[p] + "\n\n";
+    var ids = (p === 4) ? S.ranking : S.piles[p];
+    if (!ids.length) { s += "_(empty)_\n"; continue; }
+    ids.forEach(function (id) {
+      var c = textFor(id);
+      s += "- " + c.name + " - " + c.descriptor + "\n";
+    });
+  }
+  /* O2 — no #AI/Claude tag. The reference emits one; a public build does not. */
+  s += "\n-----\n" + date + "\n";
+  return s;
+}
+
+function sessionJSON() {
+  /* Key order and shapes mirror Swift's synthesised Codable conformance for
+     SessionState, so this file is the native schema and not a lookalike. */
+  return JSON.stringify({
+    completedAt: S.completedAt,
+    customCards: S.customCards.map(function (c) {
+      return { createdAt: c.createdAt, descriptor: c.descriptor, id: c.id, name: c.name };
+    }),
+    cut: S.cut,
+    deckVersion: S.deckVersion,
+    history: S.history.map(function (h) { return { card: h.card, pile: h.pile }; }),
+    id: S.id,
+    phase: S.phase,
+    piles: S.piles,
+    promotions: S.promotions,
+    queue: S.queue,
+    ranking: S.ranking,
+    shuffleOrder: S.shuffleOrder,
+    startedAt: S.startedAt,
+    themeID: S.themeID
+  }, null, 2);
+}
+
+/* ===========================================================================
+   Rendering. Plain DOM, no framework, no innerHTML with user text anywhere —
+   a card's name is whatever the sorter typed, so it is only ever set through
+   textContent.
+   ======================================================================== */
+
+var $ = function (id) { return document.getElementById(id); };
+
+function announce(msg) { $("status").textContent = msg; }
+
+function el(tag, cls, text) {
+  var e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text !== undefined) e.textContent = text;
+  return e;
+}
+
+function totalCards() { return S.shuffleOrder.length + S.customCards.length; }
+function sortedCount() { return totalCards() - S.queue.length; }
+
+function render() {
+  var phase = S.phase;
+  var stepNo = PHASES.indexOf(phase) + 1;
+  $("phase-label").textContent = "PHASE " + stepNo + " OF 4 · " + PHASE_NAMES[phase];
+
+  ["sort", "cull", "rank", "export"].forEach(function (p) {
+    $("sec-" + p).hidden = (p !== phase);
+  });
+
+  var showCounter = (phase === "sort");
+  $("counter").hidden = !showCounter;
+  $("track").hidden = !showCounter;
+  if (showCounter) {
+    $("counter").textContent = sortedCount() + " / " + totalCards();
+    $("fill").style.width = (totalCards() ? (sortedCount() / totalCards()) * 100 : 0) + "%";
+  }
+
+  if (phase === "sort") renderSort();
+  if (phase === "cull") renderCull();
+  if (phase === "rank") renderRank();
+  if (phase === "export") renderExport();
+}
+
+function renderSort() {
+  var adding = !$("add-form").hidden;
+  var cur = S.queue.length ? S.queue[0] : null;
+
+  $("sort-live").hidden = adding || !cur;
+  $("sort-done").hidden = adding || !!cur;
+  $("add-form").hidden = !adding;
+
+  if (cur) {
+    var c = textFor(cur);
+    $("card-name").textContent = c.name;
+    $("card-desc").textContent = c.descriptor;
+  } else {
+    $("done-desc").textContent =
+      "All " + totalCards() + " cards placed. Most important pile: " +
+      S.piles[4].length + (S.piles[4].length === 1 ? " card." : " cards.");
+  }
+
+  var list = $("piles");
+  list.textContent = "";
+  PILES.forEach(function (label, i) {
+    var li = el("li");
+    var b = el("button", "pile");
+    b.type = "button";
+    b.appendChild(el("span", "key", String(i + 1)));
+    b.appendChild(el("span", "label", label));
+    b.appendChild(el("span", "tally", String(S.piles[i].length)));
+    /* The visible label is the pile; the accessible name names the card too,
+       so the button says what it will actually do. */
+    b.setAttribute("aria-label",
+      cur ? ("Sort " + textFor(cur).name + " into " + label +
+             ". " + S.piles[i].length + " already here. Key " + (i + 1) + ".")
+          : (label + ". " + S.piles[i].length + " cards."));
+    b.disabled = !cur;
+    b.addEventListener("click", function () { assign(i); });
+    li.appendChild(b);
+    list.appendChild(li);
+  });
+
+  $("btn-undo").disabled = !S.history.length;
+  $("btn-undo-2").disabled = !S.history.length;
+}
+
+function renderCull() {
+  var kept = keptIDs();
+  var ok = kept.length >= 5 && kept.length <= 10;
+  var t = $("cull-tally");
+  t.textContent = kept.length + " kept" + (
+    kept.length > 10 ? " — cut " + (kept.length - 10) + " more" :
+    kept.length < 5 ? " — need " + (5 - kept.length) + " more" : " — ready");
+  t.className = "tally-line" + (ok ? "" : " warn");
+
+  var list = $("cull-list");
+  list.textContent = "";
+  S.piles[4].forEach(function (id) {
+    var isCut = draft.cut.indexOf(id) !== -1;
+    var c = textFor(id);
+    var li = el("li");
+    var b = el("button", "item" + (isCut ? " cut" : ""));
+    b.type = "button";
+    var body = el("span", "body");
+    body.appendChild(el("span", "nm", c.name));
+    body.appendChild(el("span", "ds", c.descriptor));
+    b.appendChild(body);
+    b.appendChild(el("span", "state", isCut ? "cut" : "kept"));
+    b.setAttribute("aria-pressed", isCut ? "true" : "false");
+    b.setAttribute("aria-label", c.name + ". " + (isCut ? "Cut. Choose to keep it." : "Kept. Choose to cut it."));
+    b.addEventListener("click", function () {
+      var at = draft.cut.indexOf(id);
+      if (at === -1) draft.cut.push(id); else draft.cut.splice(at, 1);
+      renderCull();
+      announce(c.name + (at === -1 ? " cut." : " kept.") + " " + keptIDs().length + " kept.");
+    });
+    li.appendChild(b);
+    list.appendChild(li);
+  });
+
+  /* R6 — promotion is offered only when the top pile cannot reach five on its
+     own, exactly as the reference gates it. */
+  var needPromote = kept.length < 5 && S.piles[3].length > 0;
+  $("promote-block").hidden = !needPromote;
+  if (needPromote) {
+    var plist = $("promote-list");
+    plist.textContent = "";
+    S.piles[3].forEach(function (id) {
+      var isP = draft.promotions.indexOf(id) !== -1;
+      var c = textFor(id);
+      var li = el("li");
+      var b = el("button", "item" + (isP ? " promoted" : ""));
+      b.type = "button";
+      var body = el("span", "body");
+      body.appendChild(el("span", "nm", c.name));
+      body.appendChild(el("span", "ds", c.descriptor));
+      b.appendChild(body);
+      b.appendChild(el("span", "state", isP ? "promoted" : ""));
+      b.setAttribute("aria-pressed", isP ? "true" : "false");
+      b.setAttribute("aria-label", c.name + ". " + (isP ? "Promoted. Choose to undo." : "Choose to promote to Most important."));
+      b.addEventListener("click", function () {
+        var at = draft.promotions.indexOf(id);
+        if (at === -1) draft.promotions.push(id); else draft.promotions.splice(at, 1);
+        renderCull();
+        announce(c.name + (at === -1 ? " promoted." : " no longer promoted.") + " " + keptIDs().length + " kept.");
+      });
+      li.appendChild(b);
+      plist.appendChild(li);
+    });
+  }
+
+  $("btn-to-rank").disabled = !ok;
+}
+
+function renderRank() {
+  var list = $("rank-list");
+  list.textContent = "";
+  S.ranking.forEach(function (id, i) {
+    var c = textFor(id);
+    var li = el("li", "item");
+    li.setAttribute("data-rank-row", String(i));
+    li.tabIndex = -1;
+    li.appendChild(el("span", "rank-no", String(i + 1)));
+    var body = el("span", "body");
+    body.appendChild(el("span", "nm", c.name));
+    body.appendChild(el("span", "ds", c.descriptor));
+    li.appendChild(body);
+
+    var up = el("button", "move", "▲");
+    up.type = "button";
+    up.disabled = (i === 0);
+    up.setAttribute("aria-label", "Move " + c.name + " up, to position " + i + " of " + S.ranking.length);
+    up.setAttribute("data-rank-index", String(i));
+    up.setAttribute("data-dir", "-1");
+    up.addEventListener("click", function () { move(i, -1); });
+
+    var down = el("button", "move", "▼");
+    down.type = "button";
+    down.disabled = (i === S.ranking.length - 1);
+    down.setAttribute("aria-label", "Move " + c.name + " down, to position " + (i + 2) + " of " + S.ranking.length);
+    down.setAttribute("data-rank-index", String(i));
+    down.setAttribute("data-dir", "1");
+    down.addEventListener("click", function () { move(i, 1); });
+
+    li.appendChild(up);
+    li.appendChild(down);
+    list.appendChild(li);
+  });
+}
+
+function renderExport() {
+  var rl = $("result-list");
+  rl.textContent = "";
+  S.ranking.forEach(function (id, i) {
+    var line = el("p", "card-desc");
+    line.style.margin = "0";
+    var n = el("span", null, (i + 1) + ". ");
+    n.style.fontFamily = "var(--mono)";
+    n.style.color = "var(--accent-ink)";
+    n.style.fontSize = ".85rem";
+    line.appendChild(n);
+    line.appendChild(document.createTextNode(textFor(id).name.toLowerCase()));
+    rl.appendChild(line);
+  });
+  $("md").value = markdown();
+
+  /* The print path renders the full sort as real text, so the PDF carries the
+     whole document rather than a screenshot of the top card. */
+  var pf = $("print-full");
+  pf.textContent = "";
+  for (var p = 4; p >= 0; p--) {
+    var ids = (p === 4) ? S.ranking : S.piles[p];
+    var h = el("h3", null, PILES[p]);
+    pf.appendChild(h);
+    if (!ids.length) { pf.appendChild(el("p", null, "(empty)")); continue; }
+    var ul = el("ul");
+    ids.forEach(function (id) {
+      var c = textFor(id);
+      ul.appendChild(el("li", null, c.name + " — " + c.descriptor));
+    });
+    pf.appendChild(ul);
+  }
+}
+
+/* ===========================================================================
+   Wiring
+   ======================================================================== */
+
+function startOver() {
+  S = freshSession();
+  indexDeck();
+  draft = { cut: [], promotions: [] };
+  $("add-form").hidden = true;
+  render();
+  announce("A new deck has been shuffled. " + totalCards() + " cards to sort.");
+}
+
+$("btn-undo").addEventListener("click", undo);
+$("btn-undo-2").addEventListener("click", undo);
+$("btn-to-cull").addEventListener("click", function () { go("cull"); });
+$("btn-to-rank").addEventListener("click", finishCull);
+$("btn-back-sort").addEventListener("click", function () { go("sort"); });
+$("btn-to-export").addEventListener("click", function () { go("export"); });
+$("btn-back-cull").addEventListener("click", function () { go("cull"); });
+$("btn-back-rank").addEventListener("click", function () { go("rank"); });
+
+function openAdd() {
+  $("add-form").hidden = false;
+  render();
+  $("new-name").focus();
+}
+function closeAdd() {
+  $("new-name").value = "";
+  $("new-desc").value = "";
+  $("add-form").hidden = true;
+  render();
+}
+$("btn-add").addEventListener("click", openAdd);
+$("btn-add-2").addEventListener("click", openAdd);
+$("btn-add-cancel").addEventListener("click", function () {
+  closeAdd();
+  ($("btn-add").offsetParent ? $("btn-add") : $("btn-add-2")).focus();
+});
+$("add-form").addEventListener("submit", function (e) {
+  e.preventDefault();
+  var added = addCustomCard($("new-name").value, $("new-desc").value);
+  if (!added) { $("new-name").focus(); return; }   // R4: a name is required
+  closeAdd();
+});
+
+/* R9 — destroying an in-progress session takes an explicit confirmation. A
+   <dialog> rather than window.confirm: it can be labelled, it traps focus, and
+   it returns focus where it came from. */
+var dlg = $("reset-dialog");
+$("btn-reset").addEventListener("click", function () { dlg.showModal(); });
+$("reset-cancel").addEventListener("click", function () { dlg.close(); });
+$("reset-confirm").addEventListener("click", function () {
+  dlg.close();
+  startOver();
+  document.getElementById("main").focus();
+});
+
+$("btn-copy").addEventListener("click", function () {
+  var ta = $("md");
+  var done = function () {
+    $("btn-copy").textContent = "Copied";
+    announce("Results copied to the clipboard.");
+    setTimeout(function () { $("btn-copy").textContent = "Copy results"; }, 2000);
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(ta.value).then(done, function () { ta.select(); });
+  } else {
+    ta.select();
+    announce("Press Command-C or Control-C to copy the selected results.");
+  }
+});
+
+$("btn-json").addEventListener("click", function () {
+  var blob = new Blob([sessionJSON()], { type: "application/json" });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement("a");
+  a.href = url;
+  a.download = "values-card-sort-" + completionDate().toISOString().slice(0, 10) + ".json";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(function () { URL.revokeObjectURL(url); }, 0);
+  announce("Session downloaded as JSON.");
+});
+
+$("btn-print").addEventListener("click", function () { window.print(); });
+
+/* R11 — 1–5 assign, U undoes. Only during Sort, never while the add-card form
+   or the reset dialog is open, and never while a text field has focus. */
+document.addEventListener("keydown", function (e) {
+  if (S.phase !== "sort") return;
+  if (!$("add-form").hidden) return;
+  if (dlg.open) return;
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  var t = e.target.tagName;
+  if (t === "INPUT" || t === "TEXTAREA" || e.target.isContentEditable) return;
+
+  if (e.key >= "1" && e.key <= "5") {
+    if (!S.queue.length) return;
+    e.preventDefault();
+    assign(Number(e.key) - 1);
+  } else if (e.key === "u" || e.key === "U") {
+    e.preventDefault();
+    undo();
+  }
+});
+
+/* A courtesy, not a promise: browsers ignore this without prior interaction
+   and word the prompt themselves. Armed only once there is work to lose. */
+window.addEventListener("beforeunload", function (e) {
+  var inProgress = S && (S.history.length > 0 || S.customCards.length > 0) && S.phase !== "export";
+  if (!inProgress) return;
+  e.preventDefault();
+  e.returnValue = "";
+});
+
+/* Attribution travels with the deck data rather than being retyped here, so it
+   cannot drift from data/deck.v1.json. */
+(function () {
+  var i = DECK.instrument;
+  var p = $("instrument-line");
+  p.appendChild(document.createTextNode(
+    i.title + ". " + i.authors + ", " + i.institution + ", " + i.year + ". " + i.copyright + ". Source: "));
+  var a = document.createElement("a");
+  a.href = i.sources[1] || i.sources[0];
+  a.textContent = "the published instrument";
+  p.appendChild(a);
+  p.appendChild(document.createTextNode("."));
+})();
+
+document.getElementById("main").setAttribute("tabindex", "-1");
+startOver();
+
+/* Exposed for the headless rule harness (tests/rules.test.js). Attaching the
+   verbs rather than duplicating them is what makes the tests evidence about
+   THIS code and not about a copy of it. */
+globalThis.VCS_TEST = {
+  state: function () { return S; },
+  setState: function (s) { S = s; },
+  freshSession: freshSession,
+  indexDeck: indexDeck,
+  assign: assign, undo: undo, addCustomCard: addCustomCard,
+  keptIDs: keptIDs, finishCull: finishCull, move: move, go: go,
+  markdown: markdown, sessionJSON: sessionJSON,
+  draft: function () { return draft; },
+  PILES: PILES
+};
+
+})();
+</script>
+</body>
+</html>
