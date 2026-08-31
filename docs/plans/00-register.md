@@ -62,13 +62,13 @@ its own plan file is listed here too, with a link, so one read gives all of them
 the absence of that read is how a chore killed by a ratified delta stayed open for
 days on the owner's track.
 
-| ID | Chore | P | Status | Owner | Plan | Source |
-|---|---|---|---|---|---|---|
-| C1 | Download both source PDFs into fixtures/, then review the agent's card-by-card verification and sign off | — | unknown | — | — | `docs/specs/SPEC.md:165` |
-| C2 | Apple Developer Program enrollment ($99/yr) | — | unknown | — | — | `docs/specs/SPEC.md:166` |
-| C3 | Create the GitHub repository; enable branch protection on main | — | unknown | — | — | `docs/specs/SPEC.md:167` |
-| C4 | App Store Connect + TestFlight setup, beta review submission | — | unknown | — | — | `docs/specs/SPEC.md:168` |
-| C5 | Run the design session with docs/design/design-handoff-card-themes.md; bring back theme specs | — | unknown | — | — | `docs/specs/SPEC.md:169` |
+| ID | Chore | P | Status | Owner | Plan | Source | TD |
+|---|---|---|---|---|---|---|---|
+| C1 | Download both source PDFs into fixtures/, then review the agent's card-by-card verification and sign off | — | unknown | — | — | `docs/specs/SPEC.md:165` | td:6hPqwQqHqHCjgr9q |
+| C2 | Apple Developer Program enrollment ($99/yr) | — | unknown | — | — | `docs/specs/SPEC.md:166` | td:6hPqwQw5gJvC4MpH |
+| C3 | Create the GitHub repository; enable branch protection on main | — | done — repo exists and is public | — | — | `docs/specs/SPEC.md:167` |
+| C4 | App Store Connect + TestFlight setup, beta review submission | — | unknown | — | — | `docs/specs/SPEC.md:168` | td:6hPqwR2h2wHHXrVH |
+| C5 | Run the design session with docs/design/design-handoff-card-themes.md; bring back theme specs | — | unknown | — | — | `docs/specs/SPEC.md:169` | td:6hPqwR5v7GGW75jq |
 
 ## Gates (G)
 
