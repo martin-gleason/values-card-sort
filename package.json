@@ -7,6 +7,7 @@
   "scripts": {
     "test": "node --test web/tests/*.test.js",
     "test:a11y": "node scripts/check_web_a11y.js",
+    "test:keyboard": "node scripts/check_web_keyboard.js",
     "test:mutations": "python3 scripts/check_web_mutations.py"
   },
   "devDependencies": {

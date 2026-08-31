@@ -103,10 +103,36 @@ face and buy no one anything.
   carries an accessible name that includes the card it acts on. axe checks that
   names exist; it cannot judge whether the announcements are *useful*. A manual
   VoiceOver and NVDA pass is still owed.
-- **Keyboard-only traversal of a complete sort** is a stated task and has been
-  exercised piecewise (every control is a real `button`, the reset uses
-  `<dialog>`, focus is moved deliberately after a rank move), but a recorded
-  end-to-end run is not in this directory yet.
 - **Print output** differs by browser. The stylesheet is written and the full
   sort renders as real text rather than a screenshot, but page-break behaviour
   in Safari, Chrome and Firefox has not been compared.
+
+## Keyboard-only traversal
+
+`node scripts/check_web_keyboard.js` — a complete sort driven with trusted key
+events and **no pointer at all**. axe never presses a key, so it cannot tell you
+whether the instrument can be *completed* without a mouse; this can.
+
+```
+  ok   R11 pressing 3 sorts the card into Important to me
+  ok   R11 keys 1-5 each reach their own pile
+  ok   R11 pressing U undoes the last placement
+  ok   opening the form moves focus into the name field
+  ok   R4 a card can be written with the keyboard alone
+  ok   digits typed into the form did not sort anything
+  ok   the whole deck sorts by keypress alone
+  ok   R5 cards can be cut by keyboard
+  ok   R7 the ranking can be reordered by keyboard
+  ok   focus survives the re-render after a rank move
+  ok   R8 export is reached by keyboard alone
+  ok   R9 Escape dismisses the dialog without destroying the sort
+
+PASSED — all 25 keyboard checks, no pointer used.
+```
+
+The first run of this reported six failures. All six were defects in the test
+harness, not the page: its tab-search built `return (predicate)` instead of
+calling the predicate, so it matched the first focusable element every time —
+the skip link — and pressing Enter jumped focus to `#main`. Worth recording,
+because the failure looked exactly like a real focus-management bug and was
+confirmed as a harness fault only by tracing focus through a real keypress.
