@@ -2,7 +2,7 @@
 
 **Status:** planned, awaiting approval. **Branch:** `f2/sort-phase` (from `main`
 once F1 merges).
-Working doc — `docs/SPEC.md` is the contract. This records how F2 is meant to
+Working doc — `docs/specs/SPEC.md` is the contract. This records how F2 is meant to
 be executed and which calls have already been made.
 
 ## Scope

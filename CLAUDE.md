@@ -7,7 +7,7 @@ Open-source SwiftUI multiplatform app (iOS/iPadOS 18+, macOS 15+) of the public-
 
 ## The contract
 
-- `docs/SPEC.md` is the ratified contract. You may **propose** spec deltas; the maintainer ratifies. You never edit the spec on your own authority.
+- `docs/specs/SPEC.md` is the ratified contract. You may **propose** spec deltas; the maintainer ratifies. You never edit the spec on your own authority.
 - `data/deck.v1.json` is **immutable** after C1 sign-off. Never edit it. A deck change is a new versioned file + a ratified spec delta. It is a **build input**, not a bundled resource: the deck is compiled into Swift by `scripts/generate_deck.py` (D6). Never hand-edit the generated file. Two hashes plus a regeneration check plus a runtime check must stay green.
 - `reference/valuescardsort.jsx` is the behavioral reference for phase rules R1–R11. When native idiom and reference behavior conflict, flag it — don't silently pick.
 

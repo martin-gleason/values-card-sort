@@ -1,7 +1,7 @@
 # F1 — Foundation (+ harness)
 
 **Status:** built, awaiting gate. **Branch:** `f1/foundation`.
-Working doc — `docs/SPEC.md` is the contract; this records how F1 was executed
+Working doc — `docs/specs/SPEC.md` is the contract; this records how F1 was executed
 and what it cost.
 
 ## Why this gate came first
