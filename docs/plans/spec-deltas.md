@@ -1,6 +1,6 @@
 # Spec deltas
 
-Working doc. `docs/SPEC.md` is the ratified contract and the agent never edits
+Working doc. `docs/specs/SPEC.md` is the ratified contract and the agent never edits
 it on its own authority (CLAUDE.md). Proposals live here until Marty says yes;
 once ratified **and transcribed into SPEC.md**, they drop to the ledger at the
 bottom rather than sitting here pretending to still be open.

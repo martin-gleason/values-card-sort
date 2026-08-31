@@ -71,7 +71,7 @@ These are contract, not preference. A PR that breaks one will not merge.
 
 ## The spec is the contract
 
-`docs/SPEC.md` is ratified. You may **propose** changes — open an issue, or add
+`docs/specs/SPEC.md` is ratified. You may **propose** changes — open an issue, or add
 to `docs/plans/spec-deltas.md` — but the maintainer ratifies. Please don't
 change behavior the spec pins (the five pile labels, the 5–10 cull range, the
 export format) in a PR that is nominally about something else.

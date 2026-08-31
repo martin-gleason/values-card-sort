@@ -4,7 +4,7 @@ A free, open-source, native Apple app (iOS · iPadOS · macOS, one SwiftUI codeb
 
 Sort 83 value cards into five piles, keep your 5–10 most important, rank them, and export the result as markdown. Everything stays on your device: no accounts, no analytics, **no network connections at all**.
 
-**Status:** F1 (foundation) built; F2 (sort phase) next. `docs/SPEC.md` is version 1.0-draft — the contract the build follows, with the open items in §11 tracked in `docs/plans/spec-deltas.md` until Marty ratifies them. Feature work proceeds gate by gate. See `docs/SPEC.md` (the contract), `docs/TESTING.md` (the test plan), `docs/plans/` (working docs), and `CLAUDE.md` (the standing rules).
+**Status:** F1 (foundation) built; F2 (sort phase) next. `docs/specs/SPEC.md` is version 1.0-draft — the contract the build follows, with the open items in §11 tracked in `docs/plans/spec-deltas.md` until Marty ratifies them. Feature work proceeds gate by gate. See `docs/specs/SPEC.md` (the contract), `docs/TESTING.md` (the test plan), `docs/plans/` (working docs), and `CLAUDE.md` (the standing rules).
 
 ## Building
 
@@ -24,7 +24,7 @@ The instrument is public domain. Sources:
 - https://motivationalinterviewing.org/sites/default/files/valuescardsort_0.pdf
 - https://casaa.unm.edu/assets/inst/personal-values-card-sort.pdf
 
-This app adapts the paper instrument for digital use; deviations are documented in `docs/SPEC.md` §2.1. `data/deck.v1.json` carries the deck as a versioned, hash-pinned contract.
+This app adapts the paper instrument for digital use; deviations are documented in `docs/specs/SPEC.md` §2.1. `data/deck.v1.json` carries the deck as a versioned, hash-pinned contract.
 
 ## License
 
