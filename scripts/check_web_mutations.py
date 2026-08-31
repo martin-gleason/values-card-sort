@@ -120,6 +120,11 @@ MUTATIONS = [
      '      s += "- " + c.name + "\\n";',
      "R8", "R8 the markdown export matches the golden file"),
 
+    ("M19", "web/index.html",
+     '  if (i === -1) return;            // state already malformed; do not duplicate',
+     '              // state already malformed; do not duplicate',
+     "R3", "R3 undo refuses to act on a malformed state"),
+
     ("M13", "web/index.html",
      '"Most important to me"',
      '"The most important ones"',
@@ -141,6 +146,15 @@ def failing_tests(output: str) -> list[str]:
 
 
 def main() -> int:
+    if "--doc" in sys.argv:
+        # Regenerates web/tests/mutations.md, so the register of mutations is
+        # never a hand-maintained copy of this list.
+        print("| ID | Rule | File | Mutation | Caught by |")
+        print("|---|---|---|---|---|")
+        for mid, rel, find, _r, rule, test in MUTATIONS:
+            print(f"| `{mid}` | {rule} | `{rel}` | {find.strip()[:64]}… | {test} |")
+        return 0
+
     if "--list" in sys.argv:
         for mid, _f, _a, _b, rule, test in MUTATIONS:
             print(f"{mid:4} {rule:8} caught by: {test}")
