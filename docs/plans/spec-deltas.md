@@ -12,7 +12,52 @@ SPEC.md) · **Landed** (in SPEC.md — see the ledger) · **Withdrawn**.
 
 ## Open
 
-*None.* D1–D7 are all ratified and transcribed. The remaining open items are
+### D8 — SPEC §10 gains a second milestone, `Web` — **Proposed**
+
+**What changes.** §10's feature list is a single unnamed table of `F1`–`F10`
+plus the chore track. It gains a second table beside it:
+
+> **Milestone `Web`** — a self-contained static port of the instrument, served
+> from GitHub Pages, so it is usable by anyone with a browser without waiting
+> for TestFlight.
+>
+> | ID | Feature | Notes |
+> |---|---|---|
+> | `Web/F1` | The port: deck emitter, sort, cull, rank, export, accessibility gate | R1–R11 **except R10** — there is no persistence to resume from |
+> | `Web/F1b` | Retrofit: adversarial review fixes | privacy gate, R8 golden file, 1.4.10 reflow, `beforeunload` |
+> | `Web/F2` | Pages deployment | see `D9` |
+
+**And an ID rule**, because this is the first time the repo has carried two
+milestones at once: **IDs are milestone-qualified** — `Web/F1`, `Web/F1-T3`,
+branch `Web/F1/port`, commit scope `feat(Web/F1-T2)`. The native milestone's
+`F1`–`F10` keep their bare form and are untouched.
+
+**Why not `F11`.** The web port is not a feature of the native app. Appending
+it files it under a milestone it does not belong to, and it would sit in the
+same table as `F8`'s "blocked by C5" and `F10`'s "final gate before TestFlight"
+— neither of which it is on the far side of.
+
+**Why not a chore.** `conventions.md` settles that with one question: *would a
+user notice?* A working instrument in a browser is user value. Ownership is a
+property of the unit, not the thing that classifies it — the baseline's own
+paragraph about `C6` being wrongly opened as `F7a` is about exactly this.
+
+**Why not a new `W` axis**, which `docs/plans/web-version.md` floated. Axis 1
+has four structural kinds, and a fifth means amending the vendored
+`docs/conventions.md` — which a project never edits in place, so it would have
+to change upstream and be re-pinned. Milestone qualification buys the same
+uniqueness for nothing.
+
+**Status of the work.** Marty allocated the ID on 2026-08-31 and approved
+`docs/plans/web-f1-port.md`; `Web/F1` and `Web/F1b` are built and merged. This
+delta is therefore a **transcription of a decision already taken**, not a fresh
+proposal — but SPEC.md is the contract and only Marty writes to it.
+
+**Where it lands.** SPEC §10.
+
+---
+
+D1–D7 are all ratified and transcribed. The remaining open items are
 SPEC §11's O3, O4 and O5, which belong to later gates:
 
 - **O3** — summary-card image export in 1.0 or 1.1 (decide at F5).

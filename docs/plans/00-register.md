@@ -37,6 +37,7 @@ number has not been decided, however clearly it was said aloud.
 | D5 | unknown | — | The accessibility gate has no exemptions. Every audit rule, every screen, default and largest content sizes; fix the view, never waive the r | `docs/plans/spec-deltas.md:48` |
 | D6 | unknown | — | The deck is compiled into the binary, not bundled as JSON. An editable deck is a vector for harm; this app puts text in front of people at h | `docs/plans/spec-deltas.md:49` |
 | D7 | unknown | — | SPEC §3.1 amended: stock components except where they fail the §6 gate. List cannot pass a strict audit — six issues survived every remedy t | `docs/plans/spec-deltas.md:50` |
+| D8 | proposed | Web | SPEC §10 gains a second milestone, `Web`, holding the GitHub Pages port; IDs are milestone-qualified (`Web/F1`, `Web/F1-T3`) because the repo now carries two milestones at once. | `docs/plans/spec-deltas.md:15` |
 
 ## Risks (RR)
 
@@ -99,8 +100,33 @@ A test is not evidence until a mutation proves it can fail.
 
 | ID | File | Mutation | Caught by | Status | Source |
 |---|---|---|---|---|---|
+| M1 | `web/index.html` | S.piles[p].push(id);… | R2 a pile keeps assignment order | caught | `scripts/check_web_mutations.py` |
+| M2 | `web/index.html` | S.queue.unshift(last.card);… | R3 undo returns the card to the FRONT | caught | `scripts/check_web_mutations.py` |
+| M3 | `web/index.html` | S.queue.unshift(cid);… | R4 a written card is uppercased and goes to the front | caught | `scripts/check_web_mutations.py` |
+| M4 | `web/index.html` | if (!n) return null;… | R4 a blank name is refused | caught | `scripts/check_web_mutations.py` |
+| M5 | `web/index.html` | if (kept.length < 5 || kept.length > 10) return;… | R5 cull refuses to finish outside the 5-10 band | caught | `scripts/check_web_mutations.py` |
+| M6 | `web/index.html` | return out.concat(draft.promotions);… | R6 promotion order is preserved into the kept set | caught | `scripts/check_web_mutations.py` |
+| M7 | `web/index.html` | if (j < 0 || j >= S.ranking.length) return;… | R7 moving past either end is a no-op | caught | `scripts/check_web_mutations.py` |
+| M8 | `web/index.html` | if (phase === "export" && S.completedAt === null) {… | R8 the export date is completion time | caught | `scripts/check_web_mutations.py` |
+| M9 | `web/index.html` | s += "\n-----\n" + date + "\n";… | R8 the export drops the #AI/Claude tag | caught | `scripts/check_web_mutations.py` |
+| M10 | `web/index.html` | var x = a.slice();… | R1 two sessions do not produce the same order | caught | `scripts/check_web_mutations.py` |
+| M11 | `web/index.html` | S.history.push({ card: id, pile: p });… | the page touches no storage or network API | caught | `scripts/check_web_mutations.py` |
+| M12 | `web/deck.js` | "to be accepted as I am"… | the page's deck is the generated one | caught | `scripts/check_web_mutations.py` |
+| M13 | `web/index.html` | "Most important to me"… | R8 markdown carries every pile | caught | `scripts/check_web_mutations.py` |
+| M14 | `web/index.html` | S.history.push({ card: id, pile: p });… | the page touches no storage or network API | caught | `scripts/check_web_mutations.py` |
+| M15 | `web/index.html` | s += "\n## Full sort\n";
+  for (var p = 4; p >= 0; p… | R8 the markdown export matches the golden file | caught | `scripts/check_web_mutations.py` |
+| M16 | `web/index.html` | var ids = (p === 4) ? S.ranking : S.piles[p];
+    if… | R8 the markdown export matches the golden file | caught | `scripts/check_web_mutations.py` |
+| M17 | `web/index.html` | s += "Completed: " + date + "\n\n## Top values (rank… | R8 the markdown export matches the golden file | caught | `scripts/check_web_mutations.py` |
+| M18 | `web/index.html` | s += "- " + c.name + " - " + c.descriptor + "\n";… | R8 the markdown export matches the golden file | caught | `scripts/check_web_mutations.py` |
+| M19 | `web/index.html` | if (i === -1) return;            // state already ma… | R3 undo refuses to act on a malformed state | caught | `scripts/check_web_mutations.py` |
 
-*(none found in this project's documents)*
+All 19 are executed by `python3 scripts/check_web_mutations.py`, which applies
+each to a scratch copy of the tree and requires the suite to fail. The generated
+register of them is `web/tests/mutations.md`. **This section read "(none found)"
+while nineteen mutations existed in the repository** — the register was
+reconstructed from documents, and these live in a script.
 
 -----
 
