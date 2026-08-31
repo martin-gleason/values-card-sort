@@ -12,7 +12,7 @@ instrument is usable by anyone with a browser without waiting for TestFlight.
 
 | # | Decision | Why |
 |---|---|---|
-| 1 | **One self-contained `index.html`, no build step.** React ported to vanilla JS. No bundler, no `node_modules`, no CDN. Pages serves `/web` from `main`. | SPEC §3 forbids app-target dependencies. A companion artifact that ships a supply chain would undercut the claim the native app makes. View-source is the whole program. |
+| 1 | **One self-contained `index.html`, no build step.** React ported to vanilla JS. No bundler, no `node_modules`, no CDN. ~~Pages serves `/web` from `main`.~~ **Superseded in part by `D9`** — GitHub serves only `/` or `/docs` from a branch; deployment is an Actions artifact upload of `web/`. The no-build-step half stands. | SPEC §3 forbids app-target dependencies. A companion artifact that ships a supply chain would undercut the claim the native app makes. View-source is the whole program. |
 | 2 | **PDF via print stylesheet + `window.print()`**, not a PDF library. | Zero bytes shipped; text stays selectable and screen-reader readable; honours the user's paper size. Cost: an OS dialog, and the filename is not ours to set. |
 | 3 | **No persistence at all**, plus a `beforeunload` warning. | The guarantee stays absolute — nothing is ever written — while an accidental reload does not silently destroy twenty minutes of work. |
 | 4 | **Deck generated from `data/deck.v1.json`.** | The deck contract exists to stop instrument drift. Two hand-copied decks reintroduce exactly the failure it prevents. |
