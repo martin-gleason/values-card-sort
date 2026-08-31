@@ -88,9 +88,22 @@ final class AccessibilityGateTests: XCTestCase {
         XCTAssertTrue(list.waitForExistence(timeout: 10))
 
         let count = app.descendants(matching: .any)["deck-card-count"]
-        for _ in 0..<8 where !count.isHittable {
-            list.swipeUp()
-        }
+
+        // Scroll to the bottom, unconditionally.
+        //
+        // This used to read `for _ in 0..<8 where !count.isHittable`, and the
+        // guard was always false: SwiftUI reports elements inside a ScrollView
+        // as hittable even when they are off screen, so the loop never ran and
+        // the view never moved. The audit therefore ran on the *unscrolled*
+        // screen, where the intro paragraph is clipped by the bottom edge at
+        // accessibility sizes — and XCUITest's contrast check on a clipped
+        // element returned different verdicts on identical trees: 2 of 3
+        // locally, and both outcomes on the same commit in CI.
+        //
+        // Scrolling until the content stops moving puts the instrument section
+        // fully on screen, which is what this test exists to audit, and leaves
+        // nothing clipped for the audit to disagree with itself about.
+        scrollToBottom(list, probe: count)
         XCTAssertTrue(count.exists, "could not scroll the instrument section into view")
 
         try assertAccessible(app)
@@ -109,4 +122,24 @@ final class AccessibilityGateTests: XCTestCase {
                       "starting a sort should show the in-progress state")
         try assertAccessible(app)
     }
+
+    /// Swipes until the scroll view stops moving, i.e. it has hit the bottom.
+    ///
+    /// Determinism is the whole point: every run must audit the same layout.
+    /// `probe`'s frame is the observable — when two consecutive swipes leave it
+    /// unchanged, the content is at rest and at its end.
+    private func scrollToBottom(
+        _ scrollView: XCUIElement,
+        probe: XCUIElement,
+        maxSwipes: Int = 10
+    ) {
+        var previous = probe.frame
+        for _ in 0..<maxSwipes {
+            scrollView.swipeUp()
+            let current = probe.frame
+            if current == previous { return }
+            previous = current
+        }
+    }
+
 }
