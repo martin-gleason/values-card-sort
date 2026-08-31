@@ -13,8 +13,9 @@ So the register is checked rather than trusted:
 - every entry must carry the sections that make it reviewable, including
   "what was tried" — a departure taken without exhausting the component is a
   shortcut using the register as cover;
-- every screenshot under docs/evidence/ must be referenced by some entry, so a
-  stale image cannot sit there implying a departure nobody documented.
+- every screenshot under docs/evidence/ must be accounted for — named by a
+  register entry, or by a README in its own evidence directory — so a stale
+  image cannot sit there implying something nobody wrote down.
 """
 
 from __future__ import annotations
@@ -71,11 +72,25 @@ def main() -> int:
 
     check(bool(referenced), "register links to screenshot evidence")
 
+    # Not every screenshot is departure evidence. The web port's accessibility
+    # captures (Web/F1) document a WCAG run, not a component we declined to use,
+    # and filing them as departures to satisfy this check would put a false
+    # entry in the register — the opposite of what it is for.
+    #
+    # The rule's actual intent is that no image sits in docs/evidence/ implying
+    # something nobody wrote down. A README beside the images does that job, so
+    # an image is accounted for if the register names it OR its own directory's
+    # README does.
+    for readme in EVIDENCE.rglob("README.md"):
+        body = readme.read_text(encoding="utf-8")
+        for name in re.findall(r"`([\w.-]+\.png)`", body):
+            referenced.add((readme.parent / name).resolve())
+
     # No orphan screenshots implying an undocumented departure.
     if EVIDENCE.is_dir():
         on_disk = {p.resolve() for p in EVIDENCE.rglob("*.png")}
         orphans = sorted(p.relative_to(ROOT) for p in on_disk - referenced)
-        check(not orphans, "every screenshot under docs/evidence/ is referenced")
+        check(not orphans, "every screenshot under docs/evidence/ is accounted for")
         for orphan in orphans:
             print(f"       unreferenced: {orphan}")
 

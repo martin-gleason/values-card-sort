@@ -141,3 +141,44 @@ jobs:
           name: test-results-${{ matrix.platform }}
           path: TestResults-${{ matrix.platform }}.xcresult
           if-no-files-found: ignore
+
+  # The web port (Web/F1). Ubuntu, no Xcode — the whole surface is two files
+  # plus a rule harness, so this job is cheap and runs on every PR.
+  #
+  # Four gates, in the order that fails fastest:
+  #   1. the deck cannot drift  — web/deck.js is generated, never hand-written
+  #   2. the rules are faithful — R1-R11 against the reference's semantics
+  #   3. the mutations are caught — a suite never shown to fail is not evidence
+  #   4. accessibility          — WCAG 2.2 AA, every phase, no exemptions (D5)
+  web:
+    name: Web port (deck · rules · mutations · a11y)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install CI-only tooling
+        # axe-core and puppeteer-core. Neither is shipped to the browser; the
+        # page loads no modules and references no CDN, and a test asserts it.
+        run: npm ci
+      - name: Both generated decks match data/deck.v1.json
+        run: python3 scripts/generate_deck.py --check
+      - name: Rule fidelity (R1-R11)
+        run: node --test web/tests/*.test.js
+      - name: Mutations are caught
+        run: python3 scripts/check_web_mutations.py
+      - name: Accessibility — WCAG 2.2 AA, no exemptions
+        # Drives the system Chrome the runner already ships, rather than
+        # downloading Chromium on every run.
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+        run: node scripts/check_web_a11y.js --evidence a11y-evidence
+      - name: Upload accessibility evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-a11y-evidence
+          path: a11y-evidence
+          if-no-files-found: ignore
