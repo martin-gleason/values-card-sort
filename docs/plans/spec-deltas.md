@@ -55,6 +55,72 @@ proposal — but SPEC.md is the contract and only Marty writes to it.
 
 **Where it lands.** SPEC §10.
 
+### D9 — Pages deploys via Actions, superseding "/web from main" — **Proposed**
+
+**Supersedes** the deployment half of the web decision ratified 2026-08-29
+(`docs/plans/web-version.md`, decision 1): *"Pages serves `/web` from `main`…
+no Actions build."* The rest of that decision — one self-contained page, no
+bundler, no `node_modules`, no CDN — is untouched and still binding.
+
+**Why it had to change: GitHub cannot do it.** Branch-based Pages accepts only
+`/` or `/docs` as its path. There is no arbitrary-subdirectory option, so
+"serves `/web` from `main`" was never implementable — it was ratified, carried
+into a plan, and treated as a configuration task for two days.
+
+    $ gh api repos/martin-gleason/values-card-sort/pages
+    "build_type": "legacy",
+    "source": { "branch": "main", "path": "/" }
+
+    $ curl -s https://martin-gleason.github.io/values-card-sort/
+    <!-- Begin Jekyll SEO tag v2.8.0 -->
+    <title>Values Card Sort: Digital Tool | values-card-sort</title>
+    $ curl -o /dev/null -w '%{http_code}' .../deck.js
+    404
+
+For weeks the public URL served a **Jekyll render of the README** — Jekyll being
+the exact build step this project's constraints forbid, run by GitHub's legacy
+builder by default.
+
+**What replaces it.** A GitHub Actions deploy (`Web/F2`): `upload-pages-artifact`
+with `path: ./web`, then `deploy-pages`, gated `needs: [contract, web]` so a
+drifted deck, a privacy-gate failure, a failing rule, a surviving mutation or an
+accessibility violation stops publication.
+
+**This is not the "build step" the original decision forbade.** No bundler, no
+generator, no transformation: the artifact is `web/index.html` and `web/deck.js`
+byte for byte. What that clause protected — that view-source is the whole
+program — is intact. Verified: the deployed `deck.js` is identical to the
+repository's.
+
+**Evidence — the observable end state**, per `conventions.md`'s rule ratified
+2026-08-31 (a decision about what another system can do is not ratifiable until
+something has run):
+
+    $ curl -s -o /dev/null -w '%{http_code} %{size_download}' https://martin-gleason.github.io/values-card-sort/
+    200 44463
+    title:       <title>Personal Values Card Sort</title>
+    deck loader: 1 reference    jekyll: 0 references
+    $ curl .../deck.js  ->  HTTP 200, 9704 bytes, 83 cards, deckVersion 1.0.0
+    $ diff <(curl -s .../deck.js) web/deck.js   ->  identical
+
+    A complete sort driven on the live site:
+      84 cards sorted (83 + one written), cull -> rank -> export,
+      6 ranked, markdown 4903 bytes, all five pile headings present,
+      no #AI/Claude tag, JSON carries all 14 SessionState keys.
+
+    The privacy promise, in a real browser rather than a test shim:
+      localStorage 0 entries, sessionStorage 0 entries, document.cookie ""
+
+**No `.nojekyll`.** With `build_type: workflow` and an artifact upload, Jekyll
+never runs; the file would imply a protection it does not provide.
+
+**Where it lands.** `docs/plans/web-version.md` decision 1 is superseded in
+part. SPEC needs no change — deployment is not a spec requirement — so this
+delta is recorded here and in the register, and closes the
+`/web`-from-`main` prose in `web-version.md:15,71` and `web-f1-port.md:47,123`.
+
+---
+
 ---
 
 D1–D7 are all ratified and transcribed. The remaining open items are

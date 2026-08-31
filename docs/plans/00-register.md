@@ -38,6 +38,7 @@ number has not been decided, however clearly it was said aloud.
 | D6 | unknown | — | The deck is compiled into the binary, not bundled as JSON. An editable deck is a vector for harm; this app puts text in front of people at h | `docs/plans/spec-deltas.md:49` |
 | D7 | unknown | — | SPEC §3.1 amended: stock components except where they fail the §6 gate. List cannot pass a strict audit — six issues survived every remedy t | `docs/plans/spec-deltas.md:50` |
 | D8 | proposed | Web | SPEC §10 gains a second milestone, `Web`, holding the GitHub Pages port; IDs are milestone-qualified (`Web/F1`, `Web/F1-T3`) because the repo now carries two milestones at once. | `docs/plans/spec-deltas.md:15` |
+| D9 | proposed | Web | Pages deploys via an Actions artifact upload of `web/`, superseding "serves `/web` from `main`, no Actions build" (2026-08-29) — branch-based Pages accepts only `/` or `/docs`, so that clause was never implementable. Verified live: `curl` returns HTTP 200, 44463 bytes, title "Personal Values Card Sort", 0 Jekyll references; `deck.js` HTTP 200 with 83 cards, identical to the repository's. | `docs/plans/spec-deltas.md:58` |
 
 ## Risks (RR)
 
