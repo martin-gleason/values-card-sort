@@ -193,3 +193,65 @@ jobs:
           name: web-a11y-evidence
           path: a11y-evidence
           if-no-files-found: ignore
+
+  # Publishes web/ to GitHub Pages. This is the unit that makes the instrument
+  # reachable at all, so it is gated on the tests rather than run beside them:
+  # `needs: [contract, web]` means a drifted deck, a privacy-gate failure, a
+  # missing SPDX header, a failing rule, a surviving mutation or an
+  # accessibility violation stops the deploy. The gates are load-bearing, not
+  # advisory — and the web privacy gate runs in `contract`, so depending on
+  # `web` alone would have let the one that matters most be skipped.
+  #
+  # D9 supersedes the "/web from main, no Actions build" half of the
+  # 2026-08-29 decision, which GitHub cannot do: branch-based Pages serves only
+  # / or /docs. Uploading web/ unchanged is not a "build step" — no bundler, no
+  # generator, no transformation. The artifact is the two files you can
+  # view-source, which is the constraint that mattered.
+  deploy-pages:
+    name: Deploy web/ to GitHub Pages
+    needs: [contract, web]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    # Never let two deploys race; the later one wins rather than interleaving.
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/configure-pages@v6
+      - name: Upload web/ as the site
+        # ./web, NOT '.' — the starter workflow's default would publish the
+        # whole repository, docs/ and plans included.
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: ./web
+      - id: deployment
+        uses: actions/deploy-pages@v5
+      - name: The deployed page must be the sort, not a rendered README
+        # The observable end state, per docs/conventions.md: a config value is
+        # what somebody intended; a 404 is what a user gets. Pages served a
+        # Jekyll render of the README for weeks while every setting read
+        # correct, so the deploy asserts what the URL actually returns.
+        run: |
+          url="${{ steps.deployment.outputs.page_url }}"
+          echo "deployed to: $url"
+          for i in $(seq 1 10); do
+            code=$(curl -s -o /tmp/page.html -w '%{http_code}' "$url" || true)
+            if [ "$code" = "200" ] && grep -q "VCS_DECK_V1" /tmp/page.html; then
+              echo "::notice::$url serves the card sort (HTTP $code)"
+              curl -s -o /dev/null -w 'deck.js -> HTTP %{http_code}\n' "${url}deck.js"
+              head -c 200 /tmp/page.html
+              exit 0
+            fi
+            echo "attempt $i: HTTP $code, not the sort yet; waiting"
+            sleep 15
+          done
+          echo "::error::$url did not serve the card sort. Content received:"
+          head -c 500 /tmp/page.html
+          exit 1
