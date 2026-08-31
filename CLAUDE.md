@@ -3,6 +3,7 @@
 Open-source SwiftUI multiplatform app (iOS/iPadOS 18+, macOS 15+) of the public-domain Personal Values Card Sort (Miller, C'de Baca, Matthews & Wilbourne, UNM 2001). Copyleft (GPL-3.0-or-later). This is a **tool, not a project**: small, finished, faithful.
 
 @docs/conventions.md
+@docs/conventions-local.md
 
 ## The contract
 
