@@ -1,0 +1,16 @@
+{
+  "name": "values-card-sort-web",
+  "version": "1.0.0",
+  "private": true,
+  "license": "GPL-3.0-or-later",
+  "description": "CI-only tooling for the web port (Web/F1). Nothing here is shipped to the browser: web/index.html and web/deck.js load no modules and reference no CDN. This manifest exists so the accessibility gate can run, and so npm never walks up out of the repository looking for one.",
+  "scripts": {
+    "test": "node --test web/tests/*.test.js",
+    "test:a11y": "node scripts/check_web_a11y.js",
+    "test:mutations": "python3 scripts/check_web_mutations.py"
+  },
+  "devDependencies": {
+    "axe-core": "^4.10.2",
+    "puppeteer-core": "^23.11.1"
+  }
+}

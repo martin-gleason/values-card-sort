@@ -1,0 +1,315 @@
+{
+  "tags": [
+    "wcag2a",
+    "wcag2aa",
+    "wcag21a",
+    "wcag21aa",
+    "wcag22aa"
+  ],
+  "axe": "4.13.0",
+  "report": [
+    {
+      "state": "1-sort",
+      "label": "Sort — a card on the desk",
+      "violations": [],
+      "passes": 24,
+      "incomplete": [
+        "color-contrast"
+      ],
+      "incompleteDetail": [
+        {
+          "rule": "color-contrast",
+          "target": "#card-name",
+          "reason": "Element's background color could not be determined due to a background gradient",
+          "fg": null,
+          "bg": null,
+          "ratio": null
+        },
+        {
+          "rule": "color-contrast",
+          "target": "#card-desc",
+          "reason": "Element's background color could not be determined due to a background gradient",
+          "fg": null,
+          "bg": null,
+          "ratio": null
+        }
+      ]
+    },
+    {
+      "state": "2-sort-add-card",
+      "label": "Sort — write your own card",
+      "violations": [],
+      "passes": 25,
+      "incomplete": [],
+      "incompleteDetail": []
+    },
+    {
+      "state": "3-sort-complete",
+      "label": "Sort — queue empty interstitial",
+      "violations": [],
+      "passes": 22,
+      "incomplete": [
+        "color-contrast"
+      ],
+      "incompleteDetail": [
+        {
+          "rule": "color-contrast",
+          "target": "#sort-done > .big.card > .card-name",
+          "reason": "Element's background color could not be determined due to a background gradient",
+          "fg": null,
+          "bg": null,
+          "ratio": null
+        },
+        {
+          "rule": "color-contrast",
+          "target": "#done-desc",
+          "reason": "Element's background color could not be determined due to a background gradient",
+          "fg": null,
+          "bg": null,
+          "ratio": null
+        }
+      ]
+    },
+    {
+      "state": "4-cull",
+      "label": "Cull — choose 5 to 10",
+      "violations": [],
+      "passes": 24,
+      "incomplete": [],
+      "incompleteDetail": []
+    },
+    {
+      "state": "5-cull-promote",
+      "label": "Cull — promotion offered (R6)",
+      "violations": [],
+      "passes": 24,
+      "incomplete": [],
+      "incompleteDetail": []
+    },
+    {
+      "state": "6-rank",
+      "label": "Rank — order the kept values",
+      "violations": [],
+      "passes": 24,
+      "incomplete": [
+        "color-contrast"
+      ],
+      "incompleteDetail": [
+        {
+          "rule": "color-contrast",
+          "target": ".move[data-rank-index=\"0\"][data-dir=\"1\"]",
+          "reason": "Element content contains only non-text characters",
+          "fg": null,
+          "bg": null,
+          "ratio": null
+        },
+        {
+          "rule": "color-contrast",
+          "target": ".move[data-rank-index=\"1\"][data-dir=\"-1\"]",
+          "reason": "Element content contains only non-text characters",
+          "fg": null,
+          "bg": null,
+          "ratio": null
+        },
+        {
+          "rule": "color-contrast",
+          "target": ".move[data-rank-index=\"1\"][data-dir=\"1\"]",
+          "reason": "Element content contains only non-text characters",
+          "fg": null,
+          "bg": null,
+          "ratio": null
+        },
+        {
+          "rule": "color-contrast",
+          "target": ".move[data-rank-index=\"2\"][data-dir=\"-1\"]",
+          "reason": "Element content contains only non-text characters",
+          "fg": null,
+          "bg": null,
+          "ratio": null
+        },
+        {
+          "rule": "color-contrast",
+          "target": ".move[data-rank-index=\"2\"][data-dir=\"1\"]",
+          "reason": "Element content contains only non-text characters",
+          "fg": null,
+          "bg": null,
+          "ratio": null
+        },
+        {
+          "rule": "color-contrast",
+          "target": ".move[data-rank-index=\"3\"][data-dir=\"-1\"]",
+          "reason": "Element content contains only non-text characters",
+          "fg": null,
+          "bg": null,
+          "ratio": null
+        },
+        {
+          "rule": "color-contrast",
+          "target": ".move[data-rank-index=\"3\"][data-dir=\"1\"]",
+          "reason": "Element content contains only non-text characters",
+          "fg": null,
+          "bg": null,
+          "ratio": null
+        },
+        {
+          "rule": "color-contrast",
+          "target": ".move[data-rank-index=\"4\"][data-dir=\"-1\"]",
+          "reason": "Element content contains only non-text characters",
+          "fg": null,
+          "bg": null,
+          "ratio": null
+        },
+        {
+          "rule": "color-contrast",
+          "target": ".move[data-rank-index=\"4\"][data-dir=\"1\"]",
+          "reason": "Element content contains only non-text characters",
+          "fg": null,
+          "bg": null,
+          "ratio": null
+        },
+        {
+          "rule": "color-contrast",
+          "target": ".move[data-rank-index=\"5\"][data-dir=\"-1\"]",
+          "reason": "Element content contains only non-text characters",
+          "fg": null,
+          "bg": null,
+          "ratio": null
+        }
+      ]
+    },
+    {
+      "state": "7-export",
+      "label": "Export — results, markdown, downloads",
+      "violations": [],
+      "passes": 25,
+      "incomplete": [
+        "color-contrast"
+      ],
+      "incompleteDetail": [
+        {
+          "rule": "color-contrast",
+          "target": "#result-card > .card-name",
+          "reason": "Element's background color could not be determined due to a background gradient",
+          "fg": null,
+          "bg": null,
+          "ratio": null
+        },
+        {
+          "rule": "color-contrast",
+          "target": ".card-desc:nth-child(1)",
+          "reason": "Element's background color could not be determined due to a background gradient",
+          "fg": null,
+          "bg": null,
+          "ratio": null
+        },
+        {
+          "rule": "color-contrast",
+          "target": ".card-desc:nth-child(1) > span",
+          "reason": "Element's background color could not be determined due to a background gradient",
+          "fg": null,
+          "bg": null,
+          "ratio": null
+        },
+        {
+          "rule": "color-contrast",
+          "target": "#result-list > .card-desc:nth-child(2)",
+          "reason": "Element's background color could not be determined due to a background gradient",
+          "fg": null,
+          "bg": null,
+          "ratio": null
+        },
+        {
+          "rule": "color-contrast",
+          "target": ".card-desc:nth-child(2) > span",
+          "reason": "Element's background color could not be determined due to a background gradient",
+          "fg": null,
+          "bg": null,
+          "ratio": null
+        },
+        {
+          "rule": "color-contrast",
+          "target": ".card-desc:nth-child(3)",
+          "reason": "Element's background color could not be determined due to a background gradient",
+          "fg": null,
+          "bg": null,
+          "ratio": null
+        },
+        {
+          "rule": "color-contrast",
+          "target": ".card-desc:nth-child(3) > span",
+          "reason": "Element's background color could not be determined due to a background gradient",
+          "fg": null,
+          "bg": null,
+          "ratio": null
+        },
+        {
+          "rule": "color-contrast",
+          "target": ".card-desc:nth-child(4)",
+          "reason": "Element's background color could not be determined due to a background gradient",
+          "fg": null,
+          "bg": null,
+          "ratio": null
+        },
+        {
+          "rule": "color-contrast",
+          "target": ".card-desc:nth-child(4) > span",
+          "reason": "Element's background color could not be determined due to a background gradient",
+          "fg": null,
+          "bg": null,
+          "ratio": null
+        },
+        {
+          "rule": "color-contrast",
+          "target": ".card-desc:nth-child(5)",
+          "reason": "Element's background color could not be determined due to a background gradient",
+          "fg": null,
+          "bg": null,
+          "ratio": null
+        },
+        {
+          "rule": "color-contrast",
+          "target": ".card-desc:nth-child(5) > span",
+          "reason": "Element's background color could not be determined due to a background gradient",
+          "fg": null,
+          "bg": null,
+          "ratio": null
+        },
+        {
+          "rule": "color-contrast",
+          "target": ".card-desc:nth-child(6)",
+          "reason": "Element's background color could not be determined due to a background gradient",
+          "fg": null,
+          "bg": null,
+          "ratio": null
+        },
+        {
+          "rule": "color-contrast",
+          "target": ".card-desc:nth-child(6) > span",
+          "reason": "Element's background color could not be determined due to a background gradient",
+          "fg": null,
+          "bg": null,
+          "ratio": null
+        }
+      ]
+    },
+    {
+      "state": "8-reset-dialog",
+      "label": "Export — start-over confirmation (R9)",
+      "violations": [],
+      "passes": 15,
+      "incomplete": [
+        "color-contrast"
+      ],
+      "incompleteDetail": [
+        {
+          "rule": "color-contrast",
+          "target": "#reset-dialog > p",
+          "reason": "Element's background color could not be determined because it partially overlaps other elements",
+          "fg": null,
+          "bg": null,
+          "ratio": null
+        }
+      ]
+    }
+  ]
+}

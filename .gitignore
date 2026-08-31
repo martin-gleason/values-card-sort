@@ -25,6 +25,12 @@ timeline.xctimeline
 __pycache__/
 *.pyc
 
+# Node — CI-only tooling for the web port's accessibility and rule gates
+# (axe-core, puppeteer-core). Nothing here is shipped to the browser: web/
+# loads no modules and references no CDN. package-lock.json IS committed, so
+# CI installs the exact versions the gate was proved against.
+node_modules/
+
 # Fixtures are instrument source PDFs downloaded by the maintainer (chore C1).
 # They are public-domain documents, not repo artifacts.
 fixtures/*.pdf
