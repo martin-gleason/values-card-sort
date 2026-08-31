@@ -123,7 +123,21 @@ struct RootView: View {
             .accessibilityIdentifier("start-sort")
             .accessibilityHint("Shuffles the deck and begins sorting \(deck.cards.count) cards.")
 
-            Text("Sort \(deck.cards.count) value cards into five piles, keep your 5 to 10 most important, then rank them. Everything stays on this device.")
+            // Two sentences, two views, deliberately.
+            //
+            // As one Text this renders ~683pt tall at AccessibilityXXXL — a
+            // single unbroken wall of text for the readers who need the large
+            // size most, and an element so tall it runs off the bottom of the
+            // screen. That also made the §6 audit unstable: XCUITest samples a
+            // partially-clipped element and returned "contrast failed" on some
+            // runs and passed on others from an identical tree.
+            //
+            // Splitting on the sentence boundary is the smaller, truer fix. The
+            // privacy promise earns its own line rather than trailing a
+            // procedural sentence, which is where a reader is most likely to
+            // stop reading.
+            Text("Sort \(deck.cards.count) value cards into five piles, keep your 5 to 10 most important, then rank them.")
+            Text("Everything stays on this device.")
         }
     }
 
