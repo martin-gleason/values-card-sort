@@ -266,7 +266,7 @@ h1 {
   font-family: var(--mono);
   font-size: .72rem;
 }
-.pile .label { flex: 1; font-weight: 600; }
+.pile .label { flex: 1; min-width: 0; overflow-wrap: anywhere; font-weight: 600; }
 .pile .tally { font-family: var(--mono); font-size: .78rem; color: #55635C; }
 .pile :focus-visible, .paper :focus-visible { --focus: var(--ink); }
 
@@ -336,6 +336,11 @@ h2.section { font-size: 1rem; font-family: var(--serif); font-style: italic; fon
   width: 100%;
   display: flex;
   align-items: center;
+  /* Wrap, or a long card name pushes the two 44px move buttons past the
+     viewport at 320px and forces two-dimensional scrolling — WCAG 1.4.10.
+     `min-width: 0` on the body lets the flex item shrink below its content
+     width instead of overflowing its parent, which is the actual cause. */
+  flex-wrap: wrap;
   gap: .75rem;
   min-height: var(--tap);
   padding: .6rem 1rem;
@@ -349,13 +354,13 @@ h2.section { font-size: 1rem; font-family: var(--serif); font-style: italic; fon
   box-shadow: 0 4px 12px rgba(0,0,0,.25);
 }
 button.item { cursor: pointer; }
-.item .nm { font-weight: 800; letter-spacing: .06em; display: block; }
+.item .nm { font-weight: 800; letter-spacing: .06em; display: block; overflow-wrap: anywhere; }
 .item .ds { font-family: var(--serif); font-style: italic; font-size: .85rem; display: block; }
 .item.cut { background: #DAD8CF; }
 .item.cut .nm { text-decoration: line-through; }
 .item.promoted { border-left-color: var(--accent); }
 .item .rank-no { font-family: var(--mono); font-weight: 700; color: var(--accent-ink); width: 1.75rem; flex: 0 0 auto; }
-.item .body { flex: 1; }
+.item .body { flex: 1 1 10rem; min-width: 0; overflow-wrap: anywhere; }
 .item .move {
   min-width: var(--tap); min-height: var(--tap);
   border: 1px solid #8A9C93; border-radius: 3px;
@@ -1194,7 +1199,13 @@ document.addEventListener("keydown", function (e) {
 /* A courtesy, not a promise: browsers ignore this without prior interaction
    and word the prompt themselves. Armed only once there is work to lose. */
 window.addEventListener("beforeunload", function (e) {
-  var inProgress = S && (S.history.length > 0 || S.customCards.length > 0) && S.phase !== "export";
+  /* Export is INCLUDED, deliberately. The ratified reason for having this at
+     all is "so an accidental reload does not silently destroy a 20-minute
+     sort" — and Export is exactly where those twenty minutes are: the results
+     are on screen, nothing is persisted, and the footer carries outbound links
+     a reader may click. Excluding it protected every screen except the one
+     that mattered. */
+  var inProgress = S && (S.history.length > 0 || S.customCards.length > 0);
   if (!inProgress) return;
   e.preventDefault();
   e.returnValue = "";

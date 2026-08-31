@@ -545,6 +545,61 @@ test("R8 the JSON download is the native SessionState schema", () => {
     "startedAt is on the Apple epoch, not the Unix one");
 });
 
+/** A fixed session: same cards, same piles, same ranking, every time.
+ *
+ * R8 is the one rule whose output a person keeps. docs/TESTING.md requires a
+ * golden-file comparison for it — "a fixture session -> exact expected
+ * markdown" — and the suite shipped without one, asserting only that each pile
+ * heading appeared *somewhere*. That is order-blind, and four export mutations
+ * survived it: pile order, the top pile using ranked order, the completion
+ * date line, and the descriptor in the full-sort lines. */
+function fixtureSession() {
+  const { T } = load();
+  const s = T.state();
+  s.queue = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((n) => "deck:" + n);
+  s.shuffleOrder = s.queue.slice();
+  s.piles = [[], [], [], [], []];
+  s.history = [];
+  s.customCards = [];
+
+  const written = T.addCustomCard("COMMUNITY", "to belong somewhere");
+  T.assign(4);                                   // the written card, top pile
+  [4, 4, 4, 4, 4, 3, 3, 2, 2, 1, 0, 0].forEach((p) => T.assign(p));
+
+  const st = T.state();
+  st.ranking = st.piles[4].slice();               // 6 kept
+  st.phase = "rank";
+  /* Reorder, so `ranking` and `piles[4]` are NOT the same sequence. They are
+     identical the instant cull finishes and diverge the moment the sorter
+     presses an arrow — so a fixture that skips this cannot tell whether the
+     export reads the ranking or the pile, which is the single most damaging
+     thing R8 can get wrong. */
+  T.move(0, 1);
+  T.move(4, -1);
+  st.phase = "export";
+  st.completedAt = 809827200;                     // fixed instant, not "now"
+  return { T, written };
+}
+
+test("R8 the markdown export matches the golden file exactly", () => {
+  const { T } = fixtureSession();
+  const md = T.markdown();
+
+  /* The date is locale- and timezone-formatted by design (D4 says the body is
+     locale formatted), so the two date occurrences are masked and asserted
+     separately. Everything else — every heading, every line, every ordering —
+     is pinned byte for byte. */
+  const dateStr = new Date((809827200 + 978307200) * 1000)
+    .toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
+  assert.ok(md.includes("Completed: " + dateStr), "the completion date line is present");
+
+  const masked = md.split(dateStr).join("<DATE>");
+  const goldenPath = path.join(__dirname, "golden", "r8-export.md");
+  if (process.env.UPDATE_GOLDEN === "1") fs.writeFileSync(goldenPath, masked);
+  const expected = fs.readFileSync(goldenPath, "utf8");
+  assert.equal(masked, expected);
+});
+
 /* ===========================================================================
    Deck contract — the page must not carry its own copy of the instrument
    ======================================================================== */
