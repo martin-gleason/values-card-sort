@@ -210,6 +210,20 @@ def main() -> int:
         if not url.startswith("https://"):
             findings.append(f"web/index.html: non-https link: {url}")
 
+    # The attribution link the page actually renders comes from deck.js at
+    # runtime (`i.sources[1]`), not from the HTML — so checking only the
+    # markup's anchors checks a URL the reader never clicks. The deck is
+    # hash-pinned today, which makes this cheap insurance rather than a live
+    # risk; the point is that a future deck cannot introduce a URL nobody
+    # looked at.
+    deck_js = WEB / "deck.js"
+    if deck_js.exists():
+        deck_urls = sorted(set(re.findall(r'"(https?://[^"]+)"', deck_js.read_text(encoding="utf-8"))))
+        for url in deck_urls:
+            if not url.startswith("https://"):
+                findings.append(f"web/deck.js: non-https source URL: {url}")
+        links += [u for u in deck_urls if u not in links]
+
     if findings:
         print("  FAIL the page writes to the device or reaches the network:")
         for f in findings:
