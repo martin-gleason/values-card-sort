@@ -169,6 +169,13 @@ jobs:
         run: node --test web/tests/*.test.js
       - name: Mutations are caught
         run: python3 scripts/check_web_mutations.py
+      - name: Keyboard-only traversal (R11, WCAG 2.1.1)
+        # axe never presses a key, so it cannot tell you whether the instrument
+        # can be COMPLETED without a pointer. This drives a whole sort with
+        # trusted key events and no mouse at all.
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+        run: node scripts/check_web_keyboard.js
       - name: Accessibility — WCAG 2.2 AA, no exemptions
         # Drives the system Chrome the runner already ships, rather than
         # downloading Chromium on every run.
