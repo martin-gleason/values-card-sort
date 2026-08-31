@@ -90,7 +90,8 @@ struct ZZ_AdversarialVerificationTests {
     @Test("ZZ_undoingACustomCardPlacementReturnsItToTheQueueNotTheVoid")
     func undoingACustomCardPlacement() throws {
         var session = try session(seed: 991)
-        let written = try #require(session.addCustomCard(name: "belonging"))
+        let writtenCard = session.addCustomCard(name: "belonging")
+        let written = try #require(writtenCard)
         #expect(session.currentCard == written.cardID)
 
         session.assign(to: .mostImportant)
@@ -114,7 +115,8 @@ struct ZZ_AdversarialVerificationTests {
         let fresh = session
 
         while session.currentCard != nil { session.assign(to: .veryImportant) }
-        let written = try #require(session.addCustomCard(name: "afterthought"))
+        let writtenCard = session.addCustomCard(name: "afterthought")
+        let written = try #require(writtenCard)
         session.assign(to: .notImportant)
         #expect(session.queue.isEmpty)
         #expect(session.sortedCount == 84)
@@ -127,11 +129,18 @@ struct ZZ_AdversarialVerificationTests {
 
         // Everything unwinds, but the written card is still in the deck: it was
         // never a placement, so history cannot remove it.
-        #expect(session.piles.allSatisfy(\.isEmpty))
+        #expect(session.piles.allSatisfy { $0.isEmpty })
         #expect(session.queue.count == 84)
         #expect(session.customCards == [written])
-        #expect(session.queue.last == fresh.shuffleOrder.last)
-        #expect(session.queue.contains(written.cardID))
+        // Undo is LIFO (R3), so the written card — assigned last — is undone
+        // *first* and every deck card is then prepended in front of it. The
+        // queue therefore ends as the original shuffle order with the written
+        // card behind it, not in front. The earlier assertion here asked for
+        // `queue.last == shuffleOrder.last`, which reads the tail as if it were
+        // still the deck's; it is the written card, and the deck order is the
+        // 83 cards ahead of it.
+        #expect(Array(session.queue.dropLast()) == fresh.shuffleOrder)
+        #expect(session.queue.last == written.cardID)
         #expect(Set(session.queue) == Set(fresh.queue).union([written.cardID]))
         #expect(session.isWellFormed)
     }
@@ -236,7 +245,9 @@ struct ZZ_AdversarialVerificationTests {
         #expect(session.totalCards == 84, "a carried-in card is dealt, not added")
         #expect(session.isWellFormed)
 
-        let added = try #require(session.addCustomCard(name: "written now"))
+        let addedCard = session.addCustomCard(name: "written now")
+
+        let added = try #require(addedCard)
         #expect(session.totalCards == 85)
         #expect(session.sortedCount == 0)
         #expect(session.currentCard == added.cardID)
