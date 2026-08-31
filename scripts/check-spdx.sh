@@ -16,11 +16,24 @@ echo "SPDX headers (SPEC §8)"
 
 # CLAUDE.md says "every source file", not every Swift file. Scripts and CI
 # config carry the notice too, so the copyleft claim covers the whole build.
+#
+# .js and .html joined the list with the web port (Web/F1). They matter more
+# here than anywhere else in the tree, not less: the web version is the copy of
+# this instrument a stranger is most likely to save, view-source and re-host,
+# and it is the only surface where the whole program is readable by the person
+# using it. A GPL notice that is absent from the one artifact people can
+# actually copy is a copyleft claim that does not hold where it counts.
+#
+# node_modules is excluded because axe-core is a CI dev-dependency (Web/F1-T6);
+# it is never shipped to the browser and its licences are not ours to assert.
 files=$(find . \
-  \( -name '*.swift' -o -name '*.py' -o -name '*.sh' -o -name '*.yml' \) \
+  \( -name '*.swift' -o -name '*.py' -o -name '*.sh' -o -name '*.yml' \
+     -o -name '*.js' -o -name '*.html' \) \
   -not -path './.build/*' \
   -not -path './DerivedData/*' \
   -not -path './*.xcodeproj/*' \
+  -not -path './node_modules/*' \
+  -not -path './*/node_modules/*' \
   -not -path './.git/*' | sort)
 
 if [ -z "$files" ]; then

@@ -42,7 +42,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 DECK_JSON = ROOT / "data" / "deck.v1.json"
-OUTPUT = ROOT / "Sources" / "ValuesCardSortKit" / "Deck" / "Deck.v1.generated.swift"
+SWIFT_OUTPUT = ROOT / "Sources" / "ValuesCardSortKit" / "Deck" / "Deck.v1.generated.swift"
+JS_OUTPUT = ROOT / "web" / "deck.js"
 
 US = chr(0x1F)
 RS = chr(0x1E)
@@ -64,11 +65,38 @@ def swift_string(value: str) -> str:
     return f'"{escaped}"'
 
 
+def js_string(value: str) -> str:
+    """A JavaScript string literal, escaped defensively for the same reason
+    ``swift_string`` is: the deck is ASCII today and a future deck may not be.
+
+    Two escapes here are not in the Swift emitter and are not decoration.
+    ``<`` is escaped because a value containing ``</script>`` would end the
+    surrounding element even inside a string literal — the one way text in a
+    data file becomes markup. U+2028 and U+2029 are line terminators to a
+    JavaScript parser but not to JSON, so they can break a literal that looked
+    fine on the page it came from.
+    """
+    escaped = (
+        value.replace("\\", "\\\\")
+        .replace('"', '\\"')
+        .replace("<", "\\x3C")
+        .replace("\n", "\\n")
+        .replace("\r", "\\r")
+        .replace("\t", "\\t")
+        .replace(" ", "\\u2028")
+        .replace(" ", "\\u2029")
+    )
+    for ch in escaped:
+        if ord(ch) < 0x20:
+            raise SystemExit(f"refusing to emit a control character from {value!r}")
+    return f'"{escaped}"'
+
+
 def canonical_payload(cards: list[dict]) -> str:
     return RS.join(f"{c['id']}{US}{c['name']}{US}{c['descriptor']}" for c in cards)
 
 
-def render(deck: dict) -> str:
+def render_swift(deck: dict) -> str:
     cards = deck["cards"]
     instrument = deck["instrument"]
     lines = [
@@ -129,30 +157,115 @@ def render(deck: dict) -> str:
     return "\n".join(lines)
 
 
+def render_js(deck: dict) -> str:
+    """The same deck as a JavaScript source file, for the web port (`Web/F1`).
+
+    **Why generate this rather than keep the reference's inline array.**
+    `reference/valuescardsort.jsx` carries its own copy of the 83 cards in a
+    `RAW` literal. Shipping that copy would give the project two hand-maintained
+    decks that drift apart silently — precisely the failure the deck contract
+    exists to prevent — so the web deck is emitted from `data/deck.v1.json` and
+    gated by the same `--check` that guards the Swift one.
+
+    **What this file does NOT claim.** D6 compiles the deck into the native
+    binary so the shipped app has no editable copy. A web page cannot make that
+    promise: anyone can read and alter `deck.js` after downloading it. The
+    guarantee here is narrower and worth stating plainly — the deck cannot drift
+    *in this repository*, because a hand edit fails the regeneration check.
+
+    A classic script assigning one frozen global, not an ES module: modules are
+    blocked by CORS over `file://`, and the page must be openable by double
+    clicking it, not only from a server.
+    """
+    cards = deck["cards"]
+    instrument = deck["instrument"]
+    lines = [
+        "// SPDX-License-Identifier: GPL-3.0-or-later",
+        "//",
+        "// GENERATED FILE — DO NOT EDIT.",
+        "//",
+        "// Produced by scripts/generate_deck.py from data/deck.v1.json.",
+        "// Regenerate with: ./scripts/generate-deck.sh",
+        "//",
+        "// A hand edit here fails CI's regeneration check, so the web deck and the",
+        "// compiled Swift deck cannot drift apart from each other or from the",
+        "// provenance record in data/deck.v1.json (SPEC §4).",
+        "//",
+        "// The instrument itself is public domain:",
+        f"//   {instrument['title']}",
+        f"//   {instrument['authors']}",
+        f"//   {instrument['institution']}, {instrument['year']}",
+        "",
+        '"use strict";',
+        "",
+        "globalThis.VCS_DECK_V1 = Object.freeze({",
+        f"  deckVersion: {js_string(deck['deckVersion'])},",
+        "  instrument: Object.freeze({",
+        f"    title: {js_string(instrument['title'])},",
+        f"    authors: {js_string(instrument['authors'])},",
+        f"    institution: {js_string(instrument['institution'])},",
+        f"    year: {instrument['year']},",
+        f"    copyright: {js_string(instrument['copyright'])},",
+        "    sources: Object.freeze([",
+    ]
+    for source in instrument["sources"]:
+        lines.append(f"      {js_string(source)},")
+    lines += [
+        "    ]),",
+        f"    verification: {js_string(instrument['verification'])},",
+        "  }),",
+        f"  cardCount: {deck['cardCount']},",
+        "  cards: Object.freeze([",
+    ]
+    for card in cards:
+        lines.append(
+            f"    Object.freeze({{ id: {card['id']}, "
+            f"name: {js_string(card['name'])}, "
+            f"descriptor: {js_string(card['descriptor'])} }}),"
+        )
+    lines += [
+        "  ]),",
+        "});",
+        "",
+    ]
+    return "\n".join(lines)
+
+
+TARGETS = (
+    (SWIFT_OUTPUT, render_swift),
+    (JS_OUTPUT, render_js),
+)
+
+
 def main() -> int:
     deck = json.loads(DECK_JSON.read_text(encoding="utf-8"))
-    rendered = render(deck)
-
     check_only = "--check" in sys.argv
+    failed = False
 
-    if check_only:
-        if not OUTPUT.exists():
-            print(f"FAIL {OUTPUT.relative_to(ROOT)} does not exist — run ./scripts/generate-deck.sh")
-            return 1
-        current = OUTPUT.read_text(encoding="utf-8")
-        if current != rendered:
-            print(f"FAIL {OUTPUT.relative_to(ROOT)} is not what data/deck.v1.json generates.")
-            print("     Either the generated file was hand-edited, or the deck changed")
-            print("     without regenerating. Both are deck drift (SPEC §4).")
-            print("     Run ./scripts/generate-deck.sh and review the diff.")
-            return 1
-        print(f"  ok   {OUTPUT.relative_to(ROOT)} matches data/deck.v1.json")
-        return 0
+    for output, render in TARGETS:
+        rendered = render(deck)
+        relative = output.relative_to(ROOT)
 
-    OUTPUT.parent.mkdir(parents=True, exist_ok=True)
-    OUTPUT.write_text(rendered, encoding="utf-8")
-    print(f"wrote {OUTPUT.relative_to(ROOT)} ({len(deck['cards'])} cards)")
-    return 0
+        if check_only:
+            if not output.exists():
+                print(f"FAIL {relative} does not exist — run ./scripts/generate-deck.sh")
+                failed = True
+                continue
+            if output.read_text(encoding="utf-8") != rendered:
+                print(f"FAIL {relative} is not what data/deck.v1.json generates.")
+                print("     Either the generated file was hand-edited, or the deck changed")
+                print("     without regenerating. Both are deck drift (SPEC §4).")
+                print("     Run ./scripts/generate-deck.sh and review the diff.")
+                failed = True
+                continue
+            print(f"  ok   {relative} matches data/deck.v1.json")
+            continue
+
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(rendered, encoding="utf-8")
+        print(f"wrote {relative} ({len(deck['cards'])} cards)")
+
+    return 1 if failed else 0
 
 
 if __name__ == "__main__":

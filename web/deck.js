@@ -1,0 +1,120 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+//
+// GENERATED FILE — DO NOT EDIT.
+//
+// Produced by scripts/generate_deck.py from data/deck.v1.json.
+// Regenerate with: ./scripts/generate-deck.sh
+//
+// A hand edit here fails CI's regeneration check, so the web deck and the
+// compiled Swift deck cannot drift apart from each other or from the
+// provenance record in data/deck.v1.json (SPEC §4).
+//
+// The instrument itself is public domain:
+//   Personal Values Card Sort
+//   W. R. Miller, J. C'de Baca, D. B. Matthews, P. L. Wilbourne
+//   University of New Mexico, 2001
+
+"use strict";
+
+globalThis.VCS_DECK_V1 = Object.freeze({
+  deckVersion: "1.0.0",
+  instrument: Object.freeze({
+    title: "Personal Values Card Sort",
+    authors: "W. R. Miller, J. C'de Baca, D. B. Matthews, P. L. Wilbourne",
+    institution: "University of New Mexico",
+    year: 2001,
+    copyright: "Public domain",
+    sources: Object.freeze([
+      "https://motivationalinterviewing.org/personal-values-card-sort",
+      "https://motivationalinterviewing.org/sites/default/files/valuescardsort_0.pdf",
+      "https://casaa.unm.edu/assets/inst/personal-values-card-sort.pdf",
+    ]),
+    verification: "PENDING card-by-card check against fixtures/ PDFs (chore C1)",
+  }),
+  cardCount: 83,
+  cards: Object.freeze([
+    Object.freeze({ id: 1, name: "ACCEPTANCE", descriptor: "to be accepted as I am" }),
+    Object.freeze({ id: 2, name: "ACCURACY", descriptor: "to be accurate in my opinions and beliefs" }),
+    Object.freeze({ id: 3, name: "ACHIEVEMENT", descriptor: "to have important accomplishments" }),
+    Object.freeze({ id: 4, name: "ADVENTURE", descriptor: "to have new and exciting experiences" }),
+    Object.freeze({ id: 5, name: "ATTRACTIVENESS", descriptor: "to be physically attractive" }),
+    Object.freeze({ id: 6, name: "AUTHORITY", descriptor: "to be in charge of and responsible for others" }),
+    Object.freeze({ id: 7, name: "AUTONOMY", descriptor: "to be self-determined and independent" }),
+    Object.freeze({ id: 8, name: "BEAUTY", descriptor: "to appreciate beauty around me" }),
+    Object.freeze({ id: 9, name: "CARING", descriptor: "to take care of others" }),
+    Object.freeze({ id: 10, name: "CHALLENGE", descriptor: "to take on difficult tasks and problems" }),
+    Object.freeze({ id: 11, name: "CHANGE", descriptor: "to have a life full of change and variety" }),
+    Object.freeze({ id: 12, name: "COMFORT", descriptor: "to have a pleasant and comfortable life" }),
+    Object.freeze({ id: 13, name: "COMMITMENT", descriptor: "to make enduring, meaningful commitments" }),
+    Object.freeze({ id: 14, name: "COMPASSION", descriptor: "to feel and act on concern for others" }),
+    Object.freeze({ id: 15, name: "CONTRIBUTION", descriptor: "to make a lasting contribution in the world" }),
+    Object.freeze({ id: 16, name: "COOPERATION", descriptor: "to work collaboratively with others" }),
+    Object.freeze({ id: 17, name: "COURTESY", descriptor: "to be considerate and polite toward others" }),
+    Object.freeze({ id: 18, name: "CREATIVITY", descriptor: "to have new and original ideas" }),
+    Object.freeze({ id: 19, name: "DEPENDABILITY", descriptor: "to be reliable and trustworthy" }),
+    Object.freeze({ id: 20, name: "DUTY", descriptor: "to carry out my duties and obligations" }),
+    Object.freeze({ id: 21, name: "ECOLOGY", descriptor: "to live in harmony with the environment" }),
+    Object.freeze({ id: 22, name: "EXCITEMENT", descriptor: "to have a life full of thrills and stimulation" }),
+    Object.freeze({ id: 23, name: "FAITHFULNESS", descriptor: "to be loyal and true in relationships" }),
+    Object.freeze({ id: 24, name: "FAME", descriptor: "to be known and recognized" }),
+    Object.freeze({ id: 25, name: "FAMILY", descriptor: "to have a happy, loving family" }),
+    Object.freeze({ id: 26, name: "FITNESS", descriptor: "to be physically fit and strong" }),
+    Object.freeze({ id: 27, name: "FLEXIBILITY", descriptor: "to adjust to new circumstances easily" }),
+    Object.freeze({ id: 28, name: "FORGIVENESS", descriptor: "to be forgiving of others" }),
+    Object.freeze({ id: 29, name: "FRIENDSHIP", descriptor: "to have close, supportive friends" }),
+    Object.freeze({ id: 30, name: "FUN", descriptor: "to play and have fun" }),
+    Object.freeze({ id: 31, name: "GENEROSITY", descriptor: "to give what I have to others" }),
+    Object.freeze({ id: 32, name: "GENUINENESS", descriptor: "to act in a manner that is true to who I am" }),
+    Object.freeze({ id: 33, name: "GOD'S WILL", descriptor: "to seek and obey the will of God" }),
+    Object.freeze({ id: 34, name: "GROWTH", descriptor: "to keep changing and growing" }),
+    Object.freeze({ id: 35, name: "HEALTH", descriptor: "to be physically well and healthy" }),
+    Object.freeze({ id: 36, name: "HELPFULNESS", descriptor: "to be helpful to others" }),
+    Object.freeze({ id: 37, name: "HONESTY", descriptor: "to be honest and truthful" }),
+    Object.freeze({ id: 38, name: "HOPE", descriptor: "to maintain a positive and optimistic outlook" }),
+    Object.freeze({ id: 39, name: "HUMILITY", descriptor: "to be modest and unassuming" }),
+    Object.freeze({ id: 40, name: "HUMOR", descriptor: "to see the humorous side of myself and the world" }),
+    Object.freeze({ id: 41, name: "INDEPENDENCE", descriptor: "to be free from dependence on others" }),
+    Object.freeze({ id: 42, name: "INDUSTRY", descriptor: "to work hard and well at my life tasks" }),
+    Object.freeze({ id: 43, name: "INNER PEACE", descriptor: "to experience personal peace" }),
+    Object.freeze({ id: 44, name: "INTIMACY", descriptor: "to share my innermost experiences with others" }),
+    Object.freeze({ id: 45, name: "JUSTICE", descriptor: "to promote fair and equal treatment for all" }),
+    Object.freeze({ id: 46, name: "KNOWLEDGE", descriptor: "to learn and contribute valuable knowledge" }),
+    Object.freeze({ id: 47, name: "LEISURE", descriptor: "to take time to relax and enjoy" }),
+    Object.freeze({ id: 48, name: "LOVED", descriptor: "to be loved by those close to me" }),
+    Object.freeze({ id: 49, name: "LOVING", descriptor: "to give love to others" }),
+    Object.freeze({ id: 50, name: "MASTERY", descriptor: "to be competent in my everyday activities" }),
+    Object.freeze({ id: 51, name: "MINDFULNESS", descriptor: "to live conscious and mindful of the present moment" }),
+    Object.freeze({ id: 52, name: "MODERATION", descriptor: "to avoid excesses and find a middle ground" }),
+    Object.freeze({ id: 53, name: "MONOGAMY", descriptor: "to have one close, loving relationship" }),
+    Object.freeze({ id: 54, name: "NON-CONFORMITY", descriptor: "to question and challenge authority and norms" }),
+    Object.freeze({ id: 55, name: "NURTURANCE", descriptor: "to take care of and nurture others" }),
+    Object.freeze({ id: 56, name: "OPENNESS", descriptor: "to be open to new experiences, ideas, and options" }),
+    Object.freeze({ id: 57, name: "ORDER", descriptor: "to have a life that is well-ordered and organized" }),
+    Object.freeze({ id: 58, name: "PASSION", descriptor: "to have deep feelings about ideas, activities, or people" }),
+    Object.freeze({ id: 59, name: "PLEASURE", descriptor: "to feel good" }),
+    Object.freeze({ id: 60, name: "POPULARITY", descriptor: "to be well-liked by many people" }),
+    Object.freeze({ id: 61, name: "POWER", descriptor: "to have control over others" }),
+    Object.freeze({ id: 62, name: "PURPOSE", descriptor: "to have meaning and direction in my life" }),
+    Object.freeze({ id: 63, name: "RATIONALITY", descriptor: "to be guided by reason and logic" }),
+    Object.freeze({ id: 64, name: "REALISM", descriptor: "to see and act realistically and practically" }),
+    Object.freeze({ id: 65, name: "RESPONSIBILITY", descriptor: "to make and carry out responsible decisions" }),
+    Object.freeze({ id: 66, name: "RISK", descriptor: "to take risks and chances" }),
+    Object.freeze({ id: 67, name: "ROMANCE", descriptor: "to have intense, exciting love in my life" }),
+    Object.freeze({ id: 68, name: "SAFETY", descriptor: "to be safe and secure" }),
+    Object.freeze({ id: 69, name: "SELF-ACCEPTANCE", descriptor: "to accept myself as I am" }),
+    Object.freeze({ id: 70, name: "SELF-CONTROL", descriptor: "to be disciplined in my own actions" }),
+    Object.freeze({ id: 71, name: "SELF-ESTEEM", descriptor: "to feel good about myself" }),
+    Object.freeze({ id: 72, name: "SELF-KNOWLEDGE", descriptor: "to have a deep and honest understanding of myself" }),
+    Object.freeze({ id: 73, name: "SERVICE", descriptor: "to be of service to others" }),
+    Object.freeze({ id: 74, name: "SEXUALITY", descriptor: "to have an active and satisfying sex life" }),
+    Object.freeze({ id: 75, name: "SIMPLICITY", descriptor: "to live life simply, with minimal needs" }),
+    Object.freeze({ id: 76, name: "SOLITUDE", descriptor: "to have time and space where I can be apart from others" }),
+    Object.freeze({ id: 77, name: "SPIRITUALITY", descriptor: "to grow and mature spiritually" }),
+    Object.freeze({ id: 78, name: "STABILITY", descriptor: "to have a life that stays fairly consistent" }),
+    Object.freeze({ id: 79, name: "TOLERANCE", descriptor: "to accept and respect those who differ from me" }),
+    Object.freeze({ id: 80, name: "TRADITION", descriptor: "to follow respected patterns of the past" }),
+    Object.freeze({ id: 81, name: "VIRTUE", descriptor: "to live a morally pure and excellent life" }),
+    Object.freeze({ id: 82, name: "WEALTH", descriptor: "to have plenty of money" }),
+    Object.freeze({ id: 83, name: "WORLD PEACE", descriptor: "to work to promote peace in the world" }),
+  ]),
+});
