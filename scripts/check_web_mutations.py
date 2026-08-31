@@ -82,12 +82,21 @@ MUTATIONS = [
     ("M11", "web/index.html",
      "  S.history.push({ card: id, pile: p });",
      '  S.history.push({ card: id, pile: p }); localStorage.setItem("vcs", "1");',
-     "SPEC §7", "the page writes nothing and calls nothing"),
+     "SPEC §7", "the page touches no storage or network API"),
 
     ("M12", "web/deck.js",
      '"to be accepted as I am"',
      '"to be accepted only when I comply"',
      "SPEC §4", "the page's deck is the generated one"),
+
+    # M14 is the attack that defeated the previous privacy gate: two string
+    # literals containing the block-comment delimiters hid a storage write from
+    # a regex-based comment stripper. The runtime trap in rules.test.js cannot
+    # be fooled this way, because a call cannot hide from the thing it calls.
+    ("M14", "web/index.html",
+     "  S.history.push({ card: id, pile: p });",
+     '  S.history.push({ card: id, pile: p }); var a = "/*"; localStorage.setItem("x","1"); var b = "*/";',
+     "SPEC §7", "the page touches no storage or network API"),
 
     ("M13", "web/index.html",
      '"Most important to me"',

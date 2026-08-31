@@ -148,12 +148,50 @@ function load() {
     URL: { createObjectURL: () => "blob:x", revokeObjectURL() {} },
     Blob: function () {},
   };
+
+  /* Every storage and network API the browser would offer, replaced by a trap
+     that records the attempt.
+
+     This is the privacy gate that actually holds. The previous one grepped the
+     source for banned names after stripping comments with a regex, and two
+     string literals containing the comment delimiters were enough to hide a
+     `localStorage` write and a network call from it while the suite stayed
+     33/33 green. Text can be hidden from a reader; a call cannot be hidden
+     from the thing being called. This also catches forms no grep would —
+     `window["local" + "Storage"]`, or a reference taken before use.
+
+     Static scanning still happens, but in scripts/check_web_privacy.py, which
+     has a string-aware scanner and its own tests. */
+  const touched = [];
+  for (const name of [
+    "localStorage", "sessionStorage", "indexedDB", "openDatabase",
+    "fetch", "XMLHttpRequest", "WebSocket", "EventSource", "Image", "Audio",
+    "Worker", "SharedWorker", "RTCPeerConnection", "importScripts",
+  ]) {
+    Object.defineProperty(sandbox, name, {
+      configurable: true,
+      get() { touched.push(name); throw new Error(`privacy: the page touched ${name}`); },
+    });
+  }
+  sandbox.navigator = {};
+  for (const name of ["sendBeacon", "geolocation", "mediaDevices", "serviceWorker"]) {
+    Object.defineProperty(sandbox.navigator, name, {
+      configurable: true,
+      get() { touched.push(`navigator.${name}`); throw new Error(`privacy: navigator.${name}`); },
+    });
+  }
+  Object.defineProperty(document, "cookie", {
+    configurable: true,
+    get() { touched.push("document.cookie"); throw new Error("privacy: document.cookie"); },
+    set() { touched.push("document.cookie="); throw new Error("privacy: document.cookie="); },
+  });
+
   sandbox.globalThis = sandbox;
   sandbox.window.addEventListener = () => {};
   vm.createContext(sandbox);
   vm.runInContext(deckSrc, sandbox);
   vm.runInContext(appSrc, sandbox);
-  return { T: sandbox.VCS_TEST, deck: sandbox.VCS_DECK_V1, byId };
+  return { T: sandbox.VCS_TEST, deck: sandbox.VCS_DECK_V1, byId, touched };
 }
 
 /** Sorts the whole deck, sending `topN` cards to Most important. */
@@ -539,32 +577,20 @@ test("index.html carries no inline copy of the deck", () => {
    Privacy — SPEC §7's promise, on this surface
    ======================================================================== */
 
-/** Strips comments, so the privacy gate reads code and not prose.
- *
- * index.html documents at length that it uses no localStorage; a gate that
- * greps the raw file therefore fails on the very sentence promising the thing
- * it is checking. Block comments and whole-line `//` comments go; `//` is
- * never stripped mid-line, so a `https://` URL cannot be mistaken for one. */
-function codeOnly(src) {
-  return src
-    .replace(/<!--[\s\S]*?-->/g, "")
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .split("\n")
-    .filter((line) => !/^\s*(\/\/|\*)/.test(line))
-    .join("\n");
-}
-
-test("the page writes nothing and calls nothing", () => {
-  const html = codeOnly(fs.readFileSync(path.join(WEB, "index.html"), "utf8"));
-  const deckJs = codeOnly(fs.readFileSync(path.join(WEB, "deck.js"), "utf8"));
-  for (const src of [html, deckJs]) {
-    for (const banned of [
-      "localStorage", "sessionStorage", "indexedDB", "document.cookie",
-      "fetch(", "XMLHttpRequest", "WebSocket", "navigator.sendBeacon",
-    ]) {
-      assert.ok(!src.includes(banned), `found ${banned}`);
-    }
-  }
+test("the page touches no storage or network API during a whole session", () => {
+  const { T, touched } = load();
+  // Exercise every path a user can take, not just construction.
+  T.addCustomCard("community", "to belong somewhere");
+  let i = 0;
+  while (T.state().queue.length) { T.assign(i < 12 ? 4 : i % 4); i++; }
+  T.go("cull");
+  T.draft().cut.push(...T.state().piles[4].slice(0, 6));
+  T.finishCull();
+  T.move(0, 1);
+  T.go("export");
+  T.markdown();
+  T.sessionJSON();
+  assert.deepEqual(touched, [], `the page touched: ${touched.join(", ")}`);
 });
 
 test("the only external URLs are attribution and licence links", () => {
