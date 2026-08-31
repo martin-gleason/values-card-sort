@@ -7,7 +7,7 @@ Generated from `docs/plans/00-register.md`, the plan files in `docs/plans/`, `do
 
 **There is no date on this page.** A generated file that embeds the time it ran can never compare equal to a regeneration of itself, so the freshness check would fail forever and get switched off. Anything read from git here is chosen to be slow-moving for the same reason.
 
-Branch: `f2/sort-phase`.
+Branch: `Web/F1/port`.
 
 ## The vision sentence
 
@@ -28,6 +28,7 @@ Status is what the unit's own plan header declares. *In git* is which task IDs h
 |---|---|---|---|---|---|---|---|---|
 | C1 | chore | no plan file — seen only in git | — | — | — | — | — | yes (no task IDs) |
 | F1 | feature | no plan file — seen only in git | — | — | — | — | — | F1-T1, F1-T2, F1-T3, F1-T4, F1-T5 |
+| F2 | feature | no plan file — seen only in git | — | — | — | — | — | F2-T1 |
 
 ## Registers
 
