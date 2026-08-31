@@ -7,7 +7,7 @@ Generated from `docs/plans/00-register.md`, the plan files in `docs/plans/`, `do
 
 **There is no date on this page.** A generated file that embeds the time it ran can never compare equal to a regeneration of itself, so the freshness check would fail forever and get switched off. Anything read from git here is chosen to be slow-moving for the same reason.
 
-Branch: `Web/F1b/review-fixes`.
+Branch: `F1b/flaky-a11y-gate`.
 
 ## The vision sentence
 
@@ -19,6 +19,7 @@ Named, never numbered (`D2`). **No source read here marks a milestone as the cur
 
 | Milestone | Decisions landing here | Units |
 |---|---|---|
+| Web | 2 | — |
 
 ## Features and chores
 
@@ -27,7 +28,9 @@ Status is what the unit's own plan header declares. *In git* is which task IDs h
 | ID | Kind | Status | Milestone | P | Owner | Plan | Tasks | In git |
 |---|---|---|---|---|---|---|---|---|
 | C1 | chore | no plan file — seen only in git | — | — | — | — | — | yes (no task IDs) |
+| C7 | chore | no plan file — seen only in git | — | — | — | — | — | yes (no task IDs) |
 | F1 | feature | no plan file — seen only in git | — | — | — | — | — | F1-T1, F1-T2, F1-T3, F1-T4, F1-T5 |
+| F1b | feature | no plan file — seen only in git | — | — | — | — | — | yes (no task IDs) |
 | F2 | feature | no plan file — seen only in git | — | — | — | — | — | F2-T1 |
 
 ## Registers
@@ -36,11 +39,11 @@ Counted from the register itself. A register with no rows still gets a line.
 
 | Register | Rows | Open | Closed |
 |---|---|---|---|
-| Decisions (`D`) | 7 | 7 | 0 |
+| Decisions (`D`) | 9 | 7 | 2 |
 | Risks (`RR`) | 0 | 0 | 0 |
 | Owner items (`O`) | 0 | 0 | 0 |
 | Hooks (`H`) | 0 | 0 | 0 |
-| Mutations (`M`) | 0 | 0 | 0 |
+| Mutations (`M`) | 19 | 19 | 0 |
 | Other (C) (`C`) | 5 | 4 | 1 |
 
 ### By status
@@ -48,6 +51,8 @@ Counted from the register itself. A register with no rows still gets a line.
 | Register | Status | Count |
 |---|---|---|
 | `D` | open | 7 |
+| `D` | ratified | 2 |
+| `M` | open | 19 |
 | `C` | done | 1 |
 | `C` | open | 4 |
 
@@ -71,6 +76,25 @@ Every open row in the register. Owner is the row's Owner column where the table 
 | owner | D5 | — | open | The accessibility gate has no exemptions. Every audit rule, every screen, default and largest content sizes; fix the vie… |
 | owner | D6 | — | open | The deck is compiled into the binary, not bundled as JSON. An editable deck is a vector for harm; this app puts text in … |
 | owner | D7 | — | open | SPEC §3.1 amended: stock components except where they fail the §6 gate. List cannot pass a strict audit — six issues sur… |
+| unassigned | M1 | — | open | S.piles[p].push(id);… |
+| unassigned | M2 | — | open | S.queue.unshift(last.card);… |
+| unassigned | M3 | — | open | S.queue.unshift(cid);… |
+| unassigned | M4 | — | open | if (!n) return null;… |
+| unassigned | M5 | — | open | if (kept.length < 5 |
+| unassigned | M6 | — | open | return out.concat(draft.promotions);… |
+| unassigned | M7 | — | open | if (j < 0 |
+| unassigned | M8 | — | open | if (phase === "export" && S.completedAt === null) {… |
+| unassigned | M9 | — | open | s += "\n-----\n" + date + "\n";… |
+| unassigned | M10 | — | open | var x = a.slice();… |
+| unassigned | M11 | — | open | S.history.push({ card: id, pile: p });… |
+| unassigned | M12 | — | open | "to be accepted as I am"… |
+| unassigned | M13 | — | open | "Most important to me"… |
+| unassigned | M14 | — | open | S.history.push({ card: id, pile: p });… |
+| unassigned | M15 | — | open | s += "\n## Full sort\n"; |
+| unassigned | M16 | — | open | web/index.html |
+| unassigned | M17 | — | open | web/index.html |
+| unassigned | M18 | — | open | web/index.html |
+| unassigned | M19 | — | open | web/index.html |
 | — | C1 | — | open | Download both source PDFs into fixtures/, then review the agent's card-by-card verification and sign off |
 | — | C2 | — | open | Apple Developer Program enrollment ($99/yr) |
 | — | C4 | — | open | App Store Connect + TestFlight setup, beta review submission |
@@ -78,4 +102,4 @@ Every open row in the register. Owner is the row's Owner column where the table 
 
 ---
 
-11 open register rows.
+30 open register rows.
