@@ -39,6 +39,8 @@ number has not been decided, however clearly it was said aloud.
 | D7 | unknown | — | SPEC §3.1 amended: stock components except where they fail the §6 gate. List cannot pass a strict audit — six issues survived every remedy t | `docs/plans/spec-deltas.md:50` |
 | D8 | ratified | Web | SPEC §10 gains a second milestone, `Web`, holding the GitHub Pages port; IDs are milestone-qualified (`Web/F1`, `Web/F1-T3`) because the repo now carries two milestones at once. | `docs/plans/spec-deltas.md:51` |
 | D9 | ratified | Web | Pages deploys via an Actions artifact upload of `web/`, superseding "serves `/web` from `main`, no Actions build" (2026-08-29) — branch-based Pages accepts only `/` or `/docs`, so that clause was never implementable. Verified live: `curl` returns HTTP 200, 44463 bytes, title "Personal Values Card Sort", 0 Jekyll references; `deck.js` HTTP 200 with 83 cards, identical to the repository's. | `docs/plans/spec-deltas.md:52` |
+| D10 | ratified | MVP | Note Card's `ACCENT` splits into three measured tokens by role — `accentFill #C34F45`, `accentText #A04139`, `accentOnDesk #D1554A`. The reference's `#C75146` fails 4 of 10 pairs in the design handoff's own required contrast table, which nobody had run; the same token had already caused a live defect on the web. Note Card is appearance-independent, so no dark palette is owed. The table is now a gate: `scripts/check_theme_contrast.py`. | `docs/plans/spec-deltas.md:15` |
+| D11 | proposed | MVP | Mucha theme definition sourced from the mothballed Mucha-Design-System: 9 of 9 pairs pass. Desk remapped to `violet.900 #251929` (its `bg.canvas→surface-1` is a 1.12:1 elevation step, not a desk); dark variant dropped on evidence (dark card on dark desk = 1.25:1, and no stock satisfies both constraints). Ornament, type and mocks still owed. Source repo has no LICENSE — provenance is the owner's call. | `docs/plans/spec-deltas.md:54` |
 
 ## Risks (RR)
 
@@ -122,6 +124,8 @@ A test is not evidence until a mutation proves it can fail.
 | M17 | `web/index.html` | s += "Completed: " + date + "\n\n## Top values (rank… | R8 the markdown export matches the golden file | caught | `scripts/check_web_mutations.py` |
 | M18 | `web/index.html` | s += "- " + c.name + " - " + c.descriptor + "\n";… | R8 the markdown export matches the golden file | caught | `scripts/check_web_mutations.py` |
 | M19 | `web/index.html` | if (i === -1) return;            // state already ma… | R3 undo refuses to act on a malformed state | caught | `scripts/check_web_mutations.py` |
+| M20 | `data/themes.v1.json` | Note Card's accent reverted to the reference's `#C75146` | theme contrast gate (fails exactly the 4 original pairs) | caught | `scripts/check_theme_contrast.py` |
+| M21 | `data/themes.v1.json` | Mucha card stock darkened toward the desk | theme contrast gate (7 pairs) | caught | `scripts/check_theme_contrast.py` |
 
 All 19 are executed by `python3 scripts/check_web_mutations.py`, which applies
 each to a scratch copy of the tree and requires the suite to fail. The generated
