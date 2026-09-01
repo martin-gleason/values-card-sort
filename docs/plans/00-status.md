@@ -31,25 +31,28 @@ Status is what the unit's own plan header declares. What has landed in git is de
 
 Counted from the register itself. A register with no rows still gets a line.
 
-| Register | Rows | Open | Closed |
-|---|---|---|---|
-| Decisions (`D`) | 11 | 8 | 3 |
-| Risks (`RR`) | 0 | 0 | 0 |
-| Owner items (`O`) | 0 | 0 | 0 |
-| Hooks (`H`) | 0 | 0 | 0 |
-| Mutations (`M`) | 21 | 21 | 0 |
-| Other (C) (`C`) | 5 | 4 | 1 |
+| Register | Rows | Open | Unknown | Closed |
+|---|---|---|---|---|
+| Decisions (`D`) | 11 | 1 | 7 | 3 |
+| Risks (`RR`) | 0 | 0 | 0 | 0 |
+| Owner items (`O`) | 0 | 0 | 0 | 0 |
+| Hooks (`H`) | 0 | 0 | 0 | 0 |
+| Mutations (`M`) | 21 | 21 | 0 | 0 |
+| Other (C) (`C`) | 5 | 0 | 4 | 1 |
+
+`Unknown` is not a third kind of open. It means the source document said nothing about status, so the page will not guess — the row is a question for the owner (`RR37`).
+
 
 ### By status
 
 | Register | Status | Count |
 |---|---|---|
-| `D` | open | 7 |
 | `D` | proposed | 1 |
 | `D` | ratified | 3 |
+| `D` | unknown | 7 |
 | `M` | open | 21 |
 | `C` | done | 1 |
-| `C` | open | 4 |
+| `C` | unknown | 4 |
 
 ## Hooks
 
@@ -64,13 +67,13 @@ Every open row in the register. Owner is the row's Owner column where the table 
 
 | Owner | ID | P | Status | Item |
 |---|---|---|---|---|
-| owner | D1 | — | open | O1 closed: minimums are iOS/iPadOS 18, macOS 15, built against the Xcode 26 SDK. |
-| owner | D2 | — | open | O2 closed: the #AI/Claude tag is dropped from the public build's export footer. Pins the R8 golden file. |
-| owner | D3 | — | open | A card-payload hash pinned alongside the file hash. The file hash is self-invalidating — chore C1's sign-off edits instr… |
-| owner | D4 | — | open | R8's export date is session.completedAt, not render-time "now"; the reference implementation misdates re-exports. The ex… |
-| owner | D5 | — | open | The accessibility gate has no exemptions. Every audit rule, every screen, default and largest content sizes; fix the vie… |
-| owner | D6 | — | open | The deck is compiled into the binary, not bundled as JSON. An editable deck is a vector for harm; this app puts text in … |
-| owner | D7 | — | open | SPEC §3.1 amended: stock components except where they fail the §6 gate. List cannot pass a strict audit — six issues sur… |
+| owner | D1 | — | unknown | O1 closed: minimums are iOS/iPadOS 18, macOS 15, built against the Xcode 26 SDK. |
+| owner | D2 | — | unknown | O2 closed: the #AI/Claude tag is dropped from the public build's export footer. Pins the R8 golden file. |
+| owner | D3 | — | unknown | A card-payload hash pinned alongside the file hash. The file hash is self-invalidating — chore C1's sign-off edits instr… |
+| owner | D4 | — | unknown | R8's export date is session.completedAt, not render-time "now"; the reference implementation misdates re-exports. The ex… |
+| owner | D5 | — | unknown | The accessibility gate has no exemptions. Every audit rule, every screen, default and largest content sizes; fix the vie… |
+| owner | D6 | — | unknown | The deck is compiled into the binary, not bundled as JSON. An editable deck is a vector for harm; this app puts text in … |
+| owner | D7 | — | unknown | SPEC §3.1 amended: stock components except where they fail the §6 gate. List cannot pass a strict audit — six issues sur… |
 | owner | D11 | — | proposed | Mucha theme definition sourced from the mothballed Mucha-Design-System: 9 of 9 pairs pass. Desk remapped to violet.900 #… |
 | unassigned | M1 | — | open | S.piles[p].push(id);… |
 | unassigned | M2 | — | open | S.queue.unshift(last.card);… |
@@ -93,10 +96,10 @@ Every open row in the register. Owner is the row's Owner column where the table 
 | unassigned | M19 | — | open | web/index.html |
 | unassigned | M20 | — | open | data/themes.v1.json |
 | unassigned | M21 | — | open | data/themes.v1.json |
-| — | C1 | — | open | Download both source PDFs into fixtures/, then review the agent's card-by-card verification and sign off |
-| — | C2 | — | open | Apple Developer Program enrollment ($99/yr) |
-| — | C4 | — | open | App Store Connect + TestFlight setup, beta review submission |
-| — | C5 | — | open | Run the design session with docs/design/design-handoff-card-themes.md; bring back theme specs |
+| — | C1 | — | unknown | Download both source PDFs into fixtures/, then review the agent's card-by-card verification and sign off |
+| — | C2 | — | unknown | Apple Developer Program enrollment ($99/yr) |
+| — | C4 | — | unknown | App Store Connect + TestFlight setup, beta review submission |
+| — | C5 | — | unknown | Run the design session with docs/design/design-handoff-card-themes.md; bring back theme specs |
 
 ---
 
