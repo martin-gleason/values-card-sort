@@ -1,0 +1,178 @@
+{
+  "$comment": "Theme palettes for the card face and desk surface (SPEC §5.3). A build input like data/deck.v1.json, not a shipped resource: F8 generates from it. Every pair listed in `contrast` is checked by scripts/check_theme_contrast.py, which is a gate, not a promise — the design handoff asked for a contrast table and nobody had run one, so both themes shipped colours that failed it.",
+  "themesVersion": "1.0.0",
+  "thresholds": {
+    "$comment": "WCAG 2.2 AA. Body text 4.5:1, large text and meaningful non-text 3:1.",
+    "body": 4.5,
+    "large": 3.0,
+    "nonText": 3.0
+  },
+  "themes": {
+    "note-card": {
+      "displayName": "Note Card",
+      "default": true,
+      "provenance": "Ported from reference/valuescardsort.jsx. ACCENT corrected by D10 — the reference's #C75146 fails at 4.47:1 white-on, 4.35:1 on paper and 2.78:1 on felt.",
+      "appearanceIndependent": true,
+      "$appearanceNote": "The card carries its own stock and its own desk, so no pair below involves a system background and every ratio is identical in dark mode. A physical index card on a felt desk looks the same whichever way the room is lit.",
+      "tokens": {
+        "desk": "#20392F",
+        "cardStock": "#FDFCF6",
+        "ink": "#25322C",
+        "rule": "#C9DEE9",
+        "ruleTop": "#DB9A93",
+        "onDesk": "#F3EFE4",
+        "accentFill": "#C34F45",
+        "accentText": "#A04139",
+        "accentOnDesk": "#D1554A"
+      },
+      "decorative": [
+        "rule",
+        "ruleTop"
+      ],
+      "$decorativeNote": "The ruled lines of an index card carry no information. WCAG 1.4.11 scopes to graphics needed to understand content or identify a control; these are neither, so they are exempt by the criterion's own scope rather than by waiver.",
+      "contrast": [
+        [
+          "card name on stock",
+          "ink",
+          "cardStock",
+          "large"
+        ],
+        [
+          "card name crossing a rule",
+          "ink",
+          "rule",
+          "large"
+        ],
+        [
+          "descriptor on stock",
+          "ink",
+          "cardStock",
+          "body"
+        ],
+        [
+          "descriptor crossing a rule",
+          "ink",
+          "rule",
+          "body"
+        ],
+        [
+          "descriptor crossing the top rule",
+          "ink",
+          "ruleTop",
+          "body"
+        ],
+        [
+          "rank numeral on stock",
+          "accentText",
+          "cardStock",
+          "body"
+        ],
+        [
+          "rank numeral crossing a rule",
+          "accentText",
+          "rule",
+          "body"
+        ],
+        [
+          "label on accent fill",
+          "#FFFFFF",
+          "accentFill",
+          "body"
+        ],
+        [
+          "text on the desk",
+          "onDesk",
+          "desk",
+          "body"
+        ],
+        [
+          "accent mark on the desk",
+          "accentOnDesk",
+          "desk",
+          "nonText"
+        ],
+        [
+          "card against the desk",
+          "cardStock",
+          "desk",
+          "nonText"
+        ]
+      ]
+    },
+    "mucha": {
+      "displayName": "Mucha",
+      "default": false,
+      "provenance": "Colour sourced from the mothballed Mucha-Design-System token set (Marty's own, primitive.color.json + semantic.light/dark.json). Desk REMAPPED — that system's bg.canvas/bg.surface-1 are document elevation steps at 1.12:1, which renders an almost-invisible card. Desk chosen by Marty 2026-08-31: violet.900. Dark variant dropped — see $appearanceNote.",
+      "appearanceIndependent": true,
+      "tokens": {
+        "desk": "#251929",
+        "cardStock": "#F0EBE4",
+        "ink": "#251B13",
+        "inkSecondary": "#533D2D",
+        "inkMuted": "#6E513C",
+        "onDesk": "#FAF8F5",
+        "accentFill": "#6B4F1F",
+        "accentText": "#445A35",
+        "onAccent": "#FAF8F5",
+        "focusRing": "#8D6827"
+      },
+      "contrast": [
+        [
+          "card name on stock",
+          "ink",
+          "cardStock",
+          "large"
+        ],
+        [
+          "descriptor on stock",
+          "ink",
+          "cardStock",
+          "body"
+        ],
+        [
+          "secondary text on stock",
+          "inkSecondary",
+          "cardStock",
+          "body"
+        ],
+        [
+          "muted text on stock",
+          "inkMuted",
+          "cardStock",
+          "body"
+        ],
+        [
+          "rank numeral on stock",
+          "accentText",
+          "cardStock",
+          "body"
+        ],
+        [
+          "label on accent fill",
+          "onAccent",
+          "accentFill",
+          "body"
+        ],
+        [
+          "text on the desk",
+          "onDesk",
+          "desk",
+          "body"
+        ],
+        [
+          "focus ring on stock",
+          "focusRing",
+          "cardStock",
+          "nonText"
+        ],
+        [
+          "card against the desk",
+          "cardStock",
+          "desk",
+          "nonText"
+        ]
+      ],
+      "$appearanceNote": "Appearance-independent, like Note Card, and for the same reason: the card carries its own stock and its own desk, so no pair involves a system background. A dark variant was attempted and abandoned on evidence — the source system's dark layer inverts a document canvas, which puts a dark card on a dark desk at 1.25:1. Separating from a near-black desk needs a LIGHT stock, and a light stock needs DARK ink, which is the light palette. No card stock in the ramp satisfies both constraints (best was umber.500 at 3.26:1 stock/desk but only 4.35:1 ink/stock, under 4.5). Paper is light; a card in a dark room is still a light card."
+    }
+  }
+}

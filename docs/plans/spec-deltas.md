@@ -12,6 +12,85 @@ SPEC.md) · **Landed** (in SPEC.md — see the ledger) · **Withdrawn**.
 
 ## Open
 
+### D10 — Note Card's ACCENT splits into three measured tokens — **Ratified**
+
+**Ratified 2026-08-31.** `docs/design/design-handoff-card-themes.md` already
+required a contrast table — *"Body ≥ 4.5:1, large text ≥ 3:1. A theme that fails
+contrast gets revised here, not in the build."* Nobody had run it. Run, it fails
+**four of ten pairs**, and every failure is the same token, `ACCENT #C75146`,
+inherited unmeasured from `reference/valuescardsort.jsx`:
+
+    rank numeral on paper        #C75146 on #FDFCF6   4.35:1  need 4.5  FAIL
+    rank numeral crossing a rule #C75146 on #C9DEE9   3.22:1  need 4.5  FAIL
+    white label on accent        #FFFFFF on #C75146   4.47:1  need 4.5  FAIL
+    accent mark on felt          #C75146 on #20392F   2.78:1  need 3.0  FAIL
+
+The same token had already produced a live defect on the web port the same
+morning, because both surfaces copied it from the one source and neither
+measured it.
+
+`ACCENT` therefore becomes three tokens, by role, with values measured on the web
+port: `accentFill #C34F45` (4.64:1 under white), `accentText #A04139` (4.56:1
+even where it crosses a rule), `accentOnDesk #D1554A` (3.03:1 on the felt). Card
+stock, ink and rules are untouched — the index-card look is intact, because only
+the red was wrong.
+
+**Note Card is appearance-independent.** Every pair is card-face-internal or
+card-on-felt; none involves a system background, so all ratios are identical in
+dark mode. The handoff's `"dark": { "…": "same shape, dark values" }` placeholder
+is therefore not owed. A physical index card on a felt desk looks the same
+whichever way the room is lit.
+
+**The table becomes a gate.** `data/themes.v1.json` holds the tokens and the
+pairs; `scripts/check_theme_contrast.py` computes them in CI. Proven to fail:
+restoring `#C75146` fails exactly the four pairs above.
+
+**Where it lands.** No SPEC change — §5.3 already names Note Card and defers the
+palette to the handoff. This corrects the handoff's tokens and moves the table
+from prose to a check.
+
+---
+
+### D11 — the Mucha theme definition, sourced from the mothballed design system — **Proposed**
+
+**What it is.** SPEC §5.3 lists Mucha among v1.0's three themes, and F8 is blocked
+on C5 returning theme specs. The mothballed `Mucha-Design-System` already contains
+the substance: seven Art Nouveau ramps, a semantic layer, and parametric ornament
+paths. `data/themes.v1.json` now carries a Mucha palette with every pair
+measured — 9 of 9 passing.
+
+**Two things were changed rather than adopted, both on evidence.**
+
+*The desk is remapped.* That system's `bg.canvas → bg.surface-1` is a document
+**elevation** step at **1.12:1** — adopted directly it renders an almost invisible
+card. The card sort needs a card on a desk, the way Note Card gets paper on felt.
+All eleven deep-ramp candidates clear both thresholds, so the choice was
+aesthetic; Marty chose `violet.900 #251929` on 2026-08-31, which also keeps Mucha
+visibly distinct from Note Card's green felt.
+
+*The dark variant is dropped.* The gate caught it on its first run: the system's
+dark layer puts a dark card on a dark desk at **1.25:1**. No stock in the ramp
+satisfies both constraints — separating from a near-black desk needs a light
+stock, and a light stock needs dark ink, which is the light palette. The best
+candidate, `umber.500`, reached 3.26:1 stock/desk but only 4.35:1 ink/stock. So
+Mucha is **appearance-independent too**, for Note Card's reason: paper is light,
+and a card in a dark room is still a light card.
+
+**Still owed for F8**, and not claimed here: ornament assets (the source has
+parametric paths in `motifs/paths.js` and `whiplash.js`, not SVG files),
+typography (Cormorant Garamond, and **no font binaries ship** in that repo), and
+mock renderings.
+
+**Provenance and licence are the owner's call**, which is why this is proposed
+rather than ratified. The source repository has **no LICENSE file**. Marty owns
+both, so he can grant one — but colour values transcribed as data is a different
+act from vendoring files, and this repo is GPL-3.0-or-later and public.
+
+**Where it lands.** No SPEC change; §5.3 already names Mucha. This fills the
+handoff's deliverable for one of the three themes.
+
+---
+
 D1–D9 are all ratified and transcribed. The remaining open items are
 SPEC §11's O3, O4 and O5, which belong to later gates:
 
