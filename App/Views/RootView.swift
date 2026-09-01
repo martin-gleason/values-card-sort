@@ -154,11 +154,16 @@ struct RootView: View {
                 Text("Phase \(state.phase.stepNumber) of \(SessionPhase.stepCount)")
             }
 
-            // F2 replaces this with the sort screen.
-            Text("The sort screen arrives in F2.")
+            NavigationLink("Continue sorting") {
+                SortDestination(deckResult: deckResult, record: record)
+            }
+            .accessibilityIdentifier("continue-sort")
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .accessibilityElement(children: .combine)
+        // `.combine` would swallow the navigation link into the summary text and
+        // leave no way to reach the sort screen with VoiceOver. `.contain` keeps
+        // the grouping without eating the control.
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("resume-sort")
     }
 

@@ -40,6 +40,8 @@ jobs:
         run: ./scripts/check-privacy.sh
       - name: SPDX headers (SPEC §8)
         run: ./scripts/check-spdx.sh
+      - name: Generated theme matches data/themes.v1.json
+        run: python3 scripts/generate_theme.py --check
       - name: Theme contrast (SPEC §5.3 card faces, §6 thresholds)
         # The design handoff asked for a contrast table. Nobody ran one, and
         # both themes carried colours that failed it.
