@@ -3,11 +3,9 @@
 
 # Status — code-process-review
 
-Generated from `docs/plans/00-register.md`, the plan files in `docs/plans/`, `docs/specs/SPEC.md`, and git, by `scripts/gen_status.py`. Hand edits are reverted by the next run and fail CI in the meantime (`D13`, `H1`).
+Generated from `docs/plans/00-register.md`, the plan files in `docs/plans/` and `docs/specs/SPEC.md`, by `scripts/gen_status.py`. Hand edits are reverted by the next run and fail CI in the meantime (`D13`, `H1`).
 
-**There is no date on this page.** A generated file that embeds the time it ran can never compare equal to a regeneration of itself, so the freshness check would fail forever and get switched off. Anything read from git here is chosen to be slow-moving for the same reason.
-
-Branch: `main`.
+**Nothing on this page comes from git, and there is no date.** A generated file that embeds anything which moves on its own can never compare equal to a regeneration of itself. This page once reported which task IDs had appeared in a commit scope, so the commit that first shipped `F3-T1` was the thing that made `F3-T1` appear — the page was stale by the act of committing it, and one project collected five regeneration commits in a day, none of which carried information (`RR11`). Everything here is derived from the register, so it changes only when the register changes, and regenerating is part of that same edit.
 
 ## The vision sentence
 
@@ -19,19 +17,15 @@ Named, never numbered (`D2`). **No source read here marks a milestone as the cur
 
 | Milestone | Decisions landing here | Units |
 |---|---|---|
+| MVP | 2 | — |
 | Web | 2 | — |
 
 ## Features and chores
 
-Status is what the unit's own plan header declares. *In git* is which task IDs have appeared in a commit scope — presence, never a commit count, so this page does not go stale by the act of committing to it.
+Status is what the unit's own plan header declares. What has landed in git is deliberately not here — see the note above.
 
-| ID | Kind | Status | Milestone | P | Owner | Plan | Tasks | In git |
-|---|---|---|---|---|---|---|---|---|
-| C1 | chore | no plan file — seen only in git | — | — | — | — | — | yes (no task IDs) |
-| C7 | chore | no plan file — seen only in git | — | — | — | — | — | yes (no task IDs) |
-| F1 | feature | no plan file — seen only in git | — | — | — | — | — | F1-T1, F1-T2, F1-T3, F1-T4, F1-T5 |
-| F1b | feature | no plan file — seen only in git | — | — | — | — | — | yes (no task IDs) |
-| F2 | feature | no plan file — seen only in git | — | — | — | — | — | F2-T1 |
+| ID | Kind | Status | Milestone | P | Owner | Plan | Tasks |
+|---|---|---|---|---|---|---|---|
 
 ## Registers
 
@@ -39,11 +33,11 @@ Counted from the register itself. A register with no rows still gets a line.
 
 | Register | Rows | Open | Closed |
 |---|---|---|---|
-| Decisions (`D`) | 9 | 7 | 2 |
+| Decisions (`D`) | 11 | 8 | 3 |
 | Risks (`RR`) | 0 | 0 | 0 |
 | Owner items (`O`) | 0 | 0 | 0 |
 | Hooks (`H`) | 0 | 0 | 0 |
-| Mutations (`M`) | 19 | 19 | 0 |
+| Mutations (`M`) | 21 | 21 | 0 |
 | Other (C) (`C`) | 5 | 4 | 1 |
 
 ### By status
@@ -51,8 +45,9 @@ Counted from the register itself. A register with no rows still gets a line.
 | Register | Status | Count |
 |---|---|---|
 | `D` | open | 7 |
-| `D` | ratified | 2 |
-| `M` | open | 19 |
+| `D` | proposed | 1 |
+| `D` | ratified | 3 |
+| `M` | open | 21 |
 | `C` | done | 1 |
 | `C` | open | 4 |
 
@@ -76,6 +71,7 @@ Every open row in the register. Owner is the row's Owner column where the table 
 | owner | D5 | — | open | The accessibility gate has no exemptions. Every audit rule, every screen, default and largest content sizes; fix the vie… |
 | owner | D6 | — | open | The deck is compiled into the binary, not bundled as JSON. An editable deck is a vector for harm; this app puts text in … |
 | owner | D7 | — | open | SPEC §3.1 amended: stock components except where they fail the §6 gate. List cannot pass a strict audit — six issues sur… |
+| owner | D11 | — | proposed | Mucha theme definition sourced from the mothballed Mucha-Design-System: 9 of 9 pairs pass. Desk remapped to violet.900 #… |
 | unassigned | M1 | — | open | S.piles[p].push(id);… |
 | unassigned | M2 | — | open | S.queue.unshift(last.card);… |
 | unassigned | M3 | — | open | S.queue.unshift(cid);… |
@@ -95,6 +91,8 @@ Every open row in the register. Owner is the row's Owner column where the table 
 | unassigned | M17 | — | open | web/index.html |
 | unassigned | M18 | — | open | web/index.html |
 | unassigned | M19 | — | open | web/index.html |
+| unassigned | M20 | — | open | data/themes.v1.json |
+| unassigned | M21 | — | open | data/themes.v1.json |
 | — | C1 | — | open | Download both source PDFs into fixtures/, then review the agent's card-by-card verification and sign off |
 | — | C2 | — | open | Apple Developer Program enrollment ($99/yr) |
 | — | C4 | — | open | App Store Connect + TestFlight setup, beta review submission |
@@ -102,4 +100,4 @@ Every open row in the register. Owner is the row's Owner column where the table 
 
 ---
 
-30 open register rows.
+33 open register rows.
