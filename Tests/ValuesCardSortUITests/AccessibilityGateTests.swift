@@ -123,6 +123,78 @@ final class AccessibilityGateTests: XCTestCase {
         try assertAccessible(app)
     }
 
+    // MARK: - F2, the sort screen
+
+    /// Navigates a freshly-launched app to the sort screen.
+    ///
+    /// Returns nil rather than failing, so a caller can report the failure at
+    /// its own line and the audit tests read as audits.
+    @discardableResult
+    private func reachSortScreen(_ app: XCUIApplication) -> Bool {
+        let start = app.buttons["start-sort"]
+        guard start.waitForExistence(timeout: 10) else { return false }
+        start.tap()
+        let cont = app.buttons["continue-sort"]
+        guard cont.waitForExistence(timeout: 5) else { return false }
+        cont.tap()
+        return app.otherElements["sort-screen"].waitForExistence(timeout: 5)
+            || app.scrollViews["sort-screen"].waitForExistence(timeout: 5)
+    }
+
+    func test_A11y_sortScreenPassesAuditAtDefaultSize() throws {
+        let app = launch()
+        XCTAssertTrue(reachSortScreen(app), "could not reach the sort screen")
+        try assertAccessible(app)
+    }
+
+    /// The gate that matters most for this screen: a card face plus five 44pt
+    /// buttons is exactly the layout that clips at accessibility sizes, and the
+    /// audit is not to be trusted on a clipped element — see F1b, where a
+    /// partially-visible view produced different verdicts on identical trees.
+    func test_A11y_sortScreenPassesAuditAtLargestDynamicTypeSize() throws {
+        let app = launch(contentSize: "UICTContentSizeCategoryAccessibilityXXXL")
+        XCTAssertTrue(reachSortScreen(app), "could not reach the sort screen")
+        try assertAccessible(app)
+    }
+
+    /// R2 — a press moves exactly one card, and the counter says so.
+    func test_R2_sortingACardAdvancesTheQueue() throws {
+        let app = launch()
+        XCTAssertTrue(reachSortScreen(app), "could not reach the sort screen")
+
+        let progress = app.staticTexts["sort-progress"]
+        XCTAssertTrue(progress.waitForExistence(timeout: 5))
+        XCTAssertTrue(progress.label.hasPrefix("0 of "), "a new sort starts at zero: \(progress.label)")
+
+        // The pile buttons name the card they will sort, so the label is the
+        // assertion that the button is wired to the right thing.
+        let pile = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] %@", "Most important to me")).firstMatch
+        XCTAssertTrue(pile.waitForExistence(timeout: 5), "the five pile buttons should be on screen")
+        XCTAssertTrue(pile.label.hasPrefix("Sort "), "a pile button should name the card: \(pile.label)")
+        pile.tap()
+
+        XCTAssertTrue(progress.label.hasPrefix("1 of "), "one card sorted: \(progress.label)")
+    }
+
+    /// R3 — undo is reachable, and returns the count.
+    func test_R3_undoReturnsTheCard() throws {
+        let app = launch()
+        XCTAssertTrue(reachSortScreen(app), "could not reach the sort screen")
+
+        let undo = app.buttons["undo"]
+        // Absent, not disabled — a disabled control cannot be dimmed to look
+        // disabled and still clear 4.5:1 on this surface. See SortView.
+        XCTAssertFalse(undo.exists, "there is nothing to undo before the first placement")
+
+        app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Sort ")).firstMatch.tap()
+        XCTAssertTrue(undo.waitForExistence(timeout: 5), "undo appears after a placement")
+
+        let progress = app.staticTexts["sort-progress"]
+        XCTAssertTrue(progress.label.hasPrefix("1 of "))
+        undo.tap()
+        XCTAssertTrue(progress.label.hasPrefix("0 of "), "undo returns the card: \(progress.label)")
+    }
+
     /// Swipes until the scroll view stops moving, i.e. it has hit the bottom.
     ///
     /// Determinism is the whole point: every run must audit the same layout.

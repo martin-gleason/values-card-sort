@@ -1,5 +1,5 @@
-<!-- VENDORED from code-process-review/conventions.md — DO NOT EDIT.
-     pinned-sha256: 04a7951d84183979751df356327078a6b97877437cf6ac9fa4755f712395063d
+<!-- VENDORED from turing-review/conventions.md — DO NOT EDIT.
+     pinned-sha256: 0b7b70d4b12799f431657d10cc1308ed99b0d2fc8cfbfc40029d2dfd37235362
      Project-local rules belong in docs/conventions-local.md (D24).
      Fix upstream, then re-vendor: python3 scripts/vendor.py <project> -->
 
@@ -143,16 +143,17 @@ that risk is real and the hybrid is not optional.
 
 ## Documents
 
-Six standing documents, plus a plan and a review per unit of work.
+Seven standing documents, plus a plan and a review per unit of work.
 
 | # | Path | Holds | Changes |
 |---|---|---|---|
 | 1 | `CLAUDE.md` | standing rules; `@import`s conventions | when the process changes |
 | 2 | `docs/conventions.md` | this file, vendored and pinned | upstream only |
-| 3 | `docs/specs/` | **the vision sentence**, `FR`/`NFR`, hook intentions. One spec or several, named for the product. | **never — it is the baseline** |
-| 4 | `docs/plans/00-register.md` | every register, one `##` each | append-only |
-| 5 | `docs/plans/00-status.md` | the state of the project as one chart | **generated, never hand-written** |
-| 6 | `docs/conventions-local.md` | conventions true of **this project only**. *Optional* — a project with no rules of its own does not need the file. | freely, by the project |
+| 3 | `docs/intents/` | **`intent.md` — the proto-spec.** Problem, proposed outcome, affected users and systems, constraints, open questions. Written before a spec exists, approved by the owner before it advances (`D49`). ***Optional*** — a project that predates `D49`, or one whose intent was never written down, is not out of compliance for the absence of a file nobody has yet had reason to create. | **never — it is a baseline too** |
+| 4 | `docs/specs/` | **the vision sentence**, `FR`/`NFR`, hook intentions. One spec or several, named for the product. | **never — it is the baseline** |
+| 5 | `docs/plans/00-register.md` | every register, one `##` each | append-only |
+| 6 | `docs/plans/00-status.md` | the state of the project as one chart | **generated, never hand-written** |
+| 7 | `docs/conventions-local.md` | conventions true of **this project only**. *Optional* — a project with no rules of its own does not need the file. | freely, by the project |
 
 **A project's specs live in `docs/specs/`, and the directory is the rule — not a filename.**
 A project may hold one spec or several: a home-automation project has a spec per subsystem,
@@ -160,6 +161,14 @@ a design system has a numbered series, and most name the file after the product 
 `SPEC.md`. The earlier rule named `docs/specs/SPEC.md` exactly, and nine of twelve projects
 ignored it for a good reason. A rule the corpus routinely and correctly breaks is a rule
 that was written wrong; it was corrected rather than enforced.
+
+**The documentation root is `docs/`, and where a build tool claims that directory the build
+moves — not the documentation.** Ratified 2026-09-01. Quarto defaults to `_site` and an R project
+template ignores `docs/` wholesale; a project that had set `output-dir: docs` would have had its
+register written somewhere it could never be committed and wiped on the next render. The rejected
+alternative was a per-project documentation-root setting: a checker that must ask each project
+where its docs live cannot answer *"is this project compliant"* without trusting a field the
+project sets itself. These conventions are worth having because the path is the same in every repo.
 
 **The vendored copy is never edited — that is what makes it checkable.** A project's own
 rules go in `docs/conventions-local.md`, which `CLAUDE.md` `@import`s alongside the pinned
@@ -176,6 +185,33 @@ lives in the register.
 
 **Documents are separated by lifecycle, not by topic.** Things that change at the same
 rate, for the same reason, by the same hand, belong in the same file.
+
+### Intent comes before the spec, and it is where the problem is written down
+
+**Ratified 2026-09-04 (`D49`)**, from Anthropic's *AI-native SDLC playbook*. `intent.md` is
+a **proto-spec**: what is wanted, why, and under which constraints, written before anything
+is designed. Problem · Proposed outcome · Affected users and systems · Constraints · Open
+questions. **No formal language is required** — the originator describes the problem in
+their own words, with Claude, and **the owner approves it before it advances.**
+
+It earns its place by holding the one thing nothing else in the chain records. A spec says
+what will be built and a register says what was decided; **neither says what hurt.** A
+project whose problem statement exists only in a chat transcript is one whose next
+maintainer cannot tell a requirement from a habit.
+
+**It lives in `docs/intents/`, not the playbook's root-level `intent/`.** The documentation
+root is `docs/` (`D35`) and directories are lowercase and plural. The divergence from the
+source is deliberate and recorded rather than quietly reconciled.
+
+**It is a baseline, like the spec.** It is not updated to match reality; a change in what is
+wanted is a `D<n>`, and the register holds it.
+
+**Rework is edits to it after the first spec commit** for the same change — a lagging
+indicator, cheap to compute from git, and one of the very few things about *planning* that
+is checkable at all. Proposed as `D50`, not ratified: this corpus has no intent yet, so the
+number has never been taken, and a measurement nobody has run is not ratifiable.
+
+---
 
 ### The spec is a baseline, and it carries one sentence
 
@@ -202,6 +238,37 @@ different paths, which costs an afternoon exactly once.
 **Plural, because these are categories of artifact:** `plans/`, `reviews/`, `chores/`,
 `specs/`, `handoffs/`, `learnings/`. **Two singulars are allowed**, both because the word
 has no plural to use: `archive/` is a literal noun, `verbiage/` is a mass noun.
+
+---
+
+## The coordinating role is named Turing
+
+**Ratified 2026-09-02.** Any session working under these conventions, hooks and skills is
+**Turing** — in a repository, and in the chat where a project is brainstormed before a
+repository exists. One coding partner across every project, not one per repo.
+
+The name is the thesis. A Turing test separates the genuine article from a convincing
+imitation, and that is the whole of *Drift = built − (spec + ratified deltas)* and of *a
+test that has never been shown to fail is not evidence*. Every defect this system has
+caught looked like evidence: a parser returning `title='ratified'` for every row, a page
+reporting `open` for rows nobody had given a status, a harness scoring a crash as a kill.
+
+**Turing is claimed by evidence, never by assertion.** A session says it is Turing by
+showing the gates green over a named corpus. `scripts/gates.py` prints that line itself,
+and it names what it could **not** reach: a lone clone is Turing over its own repository
+and is *not* Turing over the corpus, and it says so rather than falling silent. A name that
+can only be asserted is the convincing imitation the role is named after.
+
+**Turing learns by promotion, not by memory.** A session retains nothing once it ends.
+What persists is this file, the registers, and the skill a new project inherits. So a
+finding becomes learning only when it is written down and promoted upstream — a local rule
+true of every project moves here, visibly, on the record. This is stated plainly because
+the alternative is comfortable and false: an agent that believes it remembers stops
+writing things down, and the corpus then learns nothing while feeling like it does.
+
+**Turing establishes what is true; it does not decide.** Where a project has an agent that
+acts on the world — a house automation voice, say — the two names stay separate, and an
+agent that starts ruling rather than testing has stopped being Turing.
 
 ---
 
@@ -335,6 +402,62 @@ when branch-based GitHub Pages offers exactly two paths, a limit the owner alrea
 unfamiliar system prompts caution; a familiar one produces a confident sentence, and a
 register cannot tell confidence from knowledge.
 
+### Validate every artefact, not just the primary one
+
+**Ratified 2026-09-03 (`D46`).** A feature can judge its main output rigorously and still emit a
+*second* artefact that nothing checks.
+
+The case: a board editor built so it could not lie — it imported the real validator rather than
+restating a single rule, refused to export while the board was invalid, and reported problems in the
+engine's own words. It then printed a one-line manifest entry and told the host to paste it into a
+config file. That line was hand-concatenated from the wrong field and never escaped. For the
+project's own demo board it produced a key the manifest validator refuses; with a quotation mark in
+the name it produced something that was not JSON at all. The config had no partial-render path
+either, so one bad key would have taken the whole picker down — for every board, not just the new
+one.
+
+Everything that made the primary output trustworthy was absent from the secondary one, in the same
+file, written the same afternoon.
+
+**The test:** does this feature produce anything a human is told to paste, copy, commit or run —
+a config line, a command, a snippet, a filename, a URL? Each of those is an output, and each needs
+the same treatment the main one gets: validated by the thing that will consume it, and asserted on
+**as the artefact**, not as the model that generated it. The assertion that caught this one builds a
+config file out of the generated line and validates *that*.
+
+**Why it hides:** attention follows the interesting problem. The board was the interesting problem.
+The line was a detail on the way out, and details on the way out are not reviewed with the same eyes
+as the thing the feature is *about*.
+
+### When a rule and the need disagree, name the disagreement and ask
+
+**Ratified 2026-09-01.** The agent's other rule about questions is a limit: ask only when
+the answer is not already written down, changes what gets built, and cannot be settled by
+investigation. That rule exists because a careless question costs the owner a context
+switch in a review slot pinned to a fixed afternoon.
+
+**This is the case where asking is required rather than permitted**, and it passes all three
+tests by construction: a conflict between a rule and the evident purpose is written down
+nowhere, changes what gets built, and cannot be investigated — it is a question about what
+the owner wants.
+
+Both silent resolutions are wrong. **Follow the rule and the project suffers**; a learning
+project whose agent writes all the code teaches nobody. **Follow the need and the rule
+erodes** with nobody deciding it should — which is how twelve conventions copies became
+twelve paraphrases.
+
+So: **state both sides, say which you would pick and why, and stop.** In the owner's own
+framing — *"what is the learning floor? The owner wants to learn, but a discrepancy exists.
+Let me ask."*
+
+The case that produced this: the learning dial's language overlay says a weak language
+biases toward the floor, meaning the agent authors. The project was a SQL tutor for an owner
+learning SQL. The rule and the reason the project exists pointed in opposite directions, and
+the disagreement was worth more than either answer.
+
+**Expectations set at the gate are cheaper than expectations discovered at the review.** A
+question here costs one round trip. The alternative costs a feature.
+
 ### A claim recorded before it is verified says so in the sentence that records it
 
 A prediction was written in the same confident register as the rest of a document, read
@@ -352,6 +475,32 @@ returning `title='ratified'` for every decision row and marking an open item clo
 because every assertion hand-built its own object and the only two that touched the parser asked
 "is the list non-empty" and "does every item have a title", both of which the bug satisfies. A
 thirty-two-finding review said the parser was broken; **not one asked why the suite disagreed.**
+
+**Name the mutation, then RUN it, before the row is written.** Ratified 2026-09-03 (`D46`), after
+five assertions in three days passed while unable to detect the behaviour they named. Each was
+written in good faith, each read correctly, and each was proven toothless only by breaking the
+shipped code underneath it:
+
+| what escaped | the suite said |
+|---|---|
+| a CSS rule deleted outright | green |
+| a mark rendering four pixels tall | green |
+| every team's row painting another team's count | green |
+| the download button shipping bytes nobody had validated — **twice**, because the first two fixes both re-derived the bytes they expected instead of reading the download path | green |
+| the generated manifest line built from the wrong field — the assertion used a value that was *accidentally* valid for both | green |
+
+Three patterns, and none of them is exotic:
+
+- **An assertion that re-derives its expected value cannot see the path that produces the real one.**
+  Read the output where it leaves the system, not by recomputing what it ought to be.
+- **An assertion placed in the wrong loop tests the wrong population.** A per-theme rule checked
+  once, against one theme, is not checked.
+- **A fixture that satisfies both the right and the wrong implementation distinguishes nothing.**
+  Choose inputs where the two answers differ, or the test is a tautology with a green tick.
+
+So the register row is not "closed" until a mutation has been applied to the shipped code and the
+suite has been *seen* to fail, with the count recorded. `caught at 446/447` is evidence.
+`prevented by construction` is an argument, and an argument is what these five all were.
 
 The rule that follows: **a test that has never been shown to fail is not evidence.** At least one
 mutation per behaviour the tests are supposed to protect, recorded as `M<n>` with the named test

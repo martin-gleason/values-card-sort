@@ -114,7 +114,8 @@
         "accentFill": "#6B4F1F",
         "accentText": "#445A35",
         "onAccent": "#FAF8F5",
-        "focusRing": "#8D6827"
+        "focusRing": "#8D6827",
+        "accentOnDesk": "#CD9B43"
       },
       "contrast": [
         [
@@ -168,6 +169,12 @@
         [
           "card against the desk",
           "cardStock",
+          "desk",
+          "nonText"
+        ],
+        [
+          "accent mark on the desk",
+          "accentOnDesk",
           "desk",
           "nonText"
         ]
